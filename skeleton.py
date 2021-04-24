@@ -3,7 +3,36 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-class system:   
+class system:
+    '''
+    Class defining a system of elements.
+
+    Initialize by giving a string containing:
+    x : auxiliary atom
+    o : Borregaard atom
+    - : optical fiber
+
+    ...
+
+    Attributes
+    ----------
+    size : int
+        Number of elements
+    dim : int
+        Total dimension of the system. 
+    elements: list 
+        List of all element objects.
+    dim_list: list
+        List with every dimension_list  of every element.
+    flattened_dim_list : list
+        List of all dimensions
+    
+    
+    Methods
+    -------
+    hamiltonian
+    '''
+ 
     def __init__(self, system_string):
         self.size = len(system_string)
         self.elements = []
@@ -96,11 +125,22 @@ class fiber:
 
 class qunyb:
     '''
+    Borregaard atom with 4 levels.
+
     index | state
        0  |   0
        1  |   1
        e  |   2
        o  |   3
+
+    ...
+
+    Attributes
+    ----------
+
+    Methods
+    -------
+   
     '''
     def __init__(self,dim_pos,cavity_dim_pos):
         self.dim = 4
@@ -121,6 +161,9 @@ class qunyb:
 
 class qutrit:
     '''
+    Auxiliary atom with 3 levels.
+    Laser drives |g><e|
+    
     index | state
        g  |   0
        f  |   1

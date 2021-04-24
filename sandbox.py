@@ -13,7 +13,7 @@ system_string = 'x-o-o'
 
 sys = ys.system(system_string)
 
-
+help(ys.qunyb)
 
 print(sys.dim)
 
