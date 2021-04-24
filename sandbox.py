@@ -5,12 +5,15 @@ import skeleton as ys
 
 #Atoms. One in each cavity
 
-# O is aux
-system_string = 'O'
+# x is aux 
+# o is Borregaard atom
+# - is fiber
+
+system_string = 'x-o-o'
 
 sys = ys.system(system_string)
 
-print(sys.elements[0].system_dim_list)
+
 
 print(sys.dim)
 

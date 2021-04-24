@@ -41,7 +41,7 @@ class element:
         self.type = type
         self.dim_pos = dim_pos
         self.sub_elements = []
-        if  type == 'O':
+        if  type == 'x':
             self.size = 2
             self.dim = 2 * 3
             self.dim_list = [2 , 3]
@@ -114,8 +114,6 @@ class qunyb:
         for  sub_elem_dim in self.system_dim_list:
             tensor_list.append(qt.identity(sub_elem_dim))
         e_state_vector = qt.basis(4,2)
-        print(len(tensor_list))
-        print(self.dim_pos)
         tensor_list[self.dim_pos] = e_state_vector.proj()
         H = qt.tensor(tensor_list)
         return H
@@ -140,8 +138,6 @@ class qutrit:
         for  sub_elem_dim in self.system_dim_list:
             tensor_list.append(qt.identity(sub_elem_dim))
         e_state_vector = qt.basis(3,2)
-        print(len(tensor_list))
-        print(self.dim_pos)
         tensor_list[self.dim_pos] = e_state_vector.proj()
         H = qt.tensor(tensor_list)
         return H
