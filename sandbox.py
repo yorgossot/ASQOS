@@ -11,11 +11,11 @@ import skeleton as ys
 
 
 
-system_string = 'x'
+system_string = 'x-o-o'
 
 sys = ys.system(system_string)
 
 
-print(sys.dim)
+print(f'System total dimension{sys.dim}')
 
 print(sys.hamiltonian())

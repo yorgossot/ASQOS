@@ -5,7 +5,10 @@ import matplotlib.pyplot as plt
 g = 1         #atom cavity coupling
 delta_e = 1   #detuning of borregaard atom
 delta_E = 1   #detuning of aux atom
-Omega_2 = 1 #omega/2: rabi freq of laser on aux atom
+Omega_2 = 1   #omega/2: rabi freq of laser on aux atom
+#Fiber
+v_fiber = 1   #cavity fiber coupling
+phi     = 0   #phase in the hamiltonian
 
 class system:
     '''
@@ -93,8 +96,9 @@ class element:
         elif type == '-':
             self.size = 1
             self.dim = 2
-            self.dim_list = [2]
-            self.sub_elements.append( fiber( dim_pos))
+            self.dim_list = [2] 
+            cavities_connected_pos = [dim_pos-2  , dim_pos+1]   
+            self.sub_elements.append( fiber( dim_pos, cavities_connected_pos ))
         else:            
             print(f'Not valid element {type}')
             exit()
@@ -108,6 +112,22 @@ class element:
 
         
 class cavity:
+    '''
+    Cavity with two levels containing a single atom. 
+
+    index | state
+       0  |   0
+       1  |   1
+
+    ...
+
+    Attributes
+    ----------
+
+    Methods
+    -------
+   
+    '''    
     def __init__(self , dim_pos , atom_dim_pos  ):
         self.dim = 2
         self.dim_pos = dim_pos
@@ -129,13 +149,47 @@ class cavity:
         return H 
 
 class fiber:
-    def __init__(self,dim_pos):
+    '''
+    Fiber coonecting two cavities.
+
+    index | state
+       0  |   0
+       1  |   1
+
+    ...
+
+    Attributes
+    ----------
+
+    Methods
+    -------
+   
+    '''
+    def __init__(self,dim_pos, cavities_connected_pos ):
         self.dim = 2
         self.dim_pos = dim_pos
+        self.cavities_connected_pos = cavities_connected_pos
         self.system_dim_list =[]
 
     def hamiltonian(self): #return 0 operator
         H = zero_operator(self.system_dim_list)
+        
+        #adds all contributions that destroy photons in the fiber
+        tensor_list = id_operator_list(self.system_dim_list)
+        tensor_list[self.dim_pos] =  qt.destroy(self.dim)        
+        for (i,cavity_pos) in enumerate(self.cavities_connected_pos):
+            cavity_dim = self.system_dim_list[cavity_pos]
+            tensor_list[cavity_pos] = qt.create(cavity_dim)
+            phase = phi
+            if phase != 0 and i!=0 :
+                H += qt.tensor(tensor_list) * np.exp( complex(0,phase) )
+            else:
+                H += qt.tensor(tensor_list)
+            tensor_list = id_operator_list(self.system_dim_list)
+            tensor_list[self.dim_pos] =  qt.destroy(self.dim) 
+        
+        H += H.dag()     #add hermitian conj
+        H = v_fiber * H
         return H 
 
 class qunyb:
