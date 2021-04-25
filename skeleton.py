@@ -44,7 +44,7 @@ class system:
         self.size = len(system_string)
         self.elements = []
         self.dim_list =[]
-        self.dim = 1   
+        self.dim = 1  
         dim_pos = 0
         for ( pos , el_type ) in enumerate(system_string):
             self.elements.append( element( pos, el_type, dim_pos ) )
@@ -62,12 +62,43 @@ class system:
                 
 
         
-    def hamiltonian(self):
+    def construct_hamiltonian(self):
         H = zero_operator(self.flattened_dim_list)
         for elem in self.elements:
             H += elem.hamiltonian()
-        return H 
+        self.hamiltonian = H
 
+    def gs_hamiltonian(self):
+        state_excitation = np.empty(self.dim, dtype= f'U{len(self.flattened_dim_list)}')
+
+        sub_elem_excitation_list = []
+        for elem in self.elements:
+            for sub_elem in elem.sub_elements:
+                sub_elem_excitation_list.append(sub_elem.excitation)
+        
+        
+               
+        #for sub_elem_excitation in sub_elem_excitation_list.reverse():
+        #    pass
+
+        times_to_be_tensored = 1
+        sub_elem_dim_prod = 1
+        for elem in self.elements:
+            for sub_elem in elem.sub_elements:
+                sub_elem_dim_prod *= sub_elem.dim
+                for  t in range( times_to_be_tensored):
+                    subblock_start = int(t/times_to_be_tensored*self.dim)
+
+                    for i in range(sub_elem.dim):
+                        slice_start = int( (i*self.dim / sub_elem_dim_prod ) + subblock_start  )
+                        slice_end = int(( (i+1) *self.dim/sub_elem_dim_prod ) + subblock_start )
+                        for j in range(slice_start,slice_end):
+                            state_excitation[j] += sub_elem.excitation[i]
+                times_to_be_tensored *= sub_elem.dim   
+                         
+
+        print(state_excitation)
+        
 
 
 class element:
@@ -115,9 +146,9 @@ class cavity:
     '''
     Cavity with two levels containing a single atom. 
 
-    index | state
-       0  |   0
-       1  |   1
+    index | state  |  excitation
+       0  |   0    |     g
+       1  |   1    |     e
 
     ...
 
@@ -133,7 +164,8 @@ class cavity:
         self.dim_pos = dim_pos
         self.atom_dim_pos = atom_dim_pos
         self.system_dim_list =[]
-    
+        self.excitation = np.array(['g','e'])
+
     def hamiltonian(self): 
         atom_dim = self.system_dim_list[self.atom_dim_pos]
         e_ket = qt.basis(atom_dim,2)
@@ -152,9 +184,9 @@ class fiber:
     '''
     Fiber coonecting two cavities.
 
-    index | state
-       0  |   0
-       1  |   1
+    index | state  |  excitation
+       0  |   0    |     g
+       1  |   1    |     e
 
     ...
 
@@ -170,6 +202,7 @@ class fiber:
         self.dim_pos = dim_pos
         self.cavities_connected_pos = cavities_connected_pos
         self.system_dim_list =[]
+        self.excitation = np.array(['g','e'])
 
     def hamiltonian(self): #return 0 operator
         H = zero_operator(self.system_dim_list)
@@ -196,11 +229,11 @@ class qunyb:
     '''
     Borregaard atom with 4 levels.
 
-    index | state
-       0  |   0
-       1  |   1
-       e  |   2
-       o  |   3
+    index | state |  excitation 
+       0  |   0   |      g
+       1  |   1   |      p
+       e  |   2   |      e
+       o  |   3   |      p
 
     ...
 
@@ -216,6 +249,7 @@ class qunyb:
         self.dim_pos = dim_pos
         self.system_dim_list =[]
         self.cavity_dim_pos = cavity_dim_pos    
+        self.excitation = np.array(['g', 'p', 'e' , 'p'])
 
     def hamiltonian(self):
         tensor_list = id_operator_list(self.system_dim_list)
@@ -229,16 +263,17 @@ class qutrit:
     Auxiliary atom with 3 levels.
     Laser drives |g><e|
     
-    index | state
-       g  |   0
-       f  |   1
-       E  |   2
+    index | state |  excitation
+       g  |   0   |      g
+       f  |   1   |      p
+       E  |   2   |      e
     '''
     def __init__(self,dim_pos,cavity_dim_pos):
         self.dim=3
         self.dim_pos = dim_pos
         self.system_dim_list =[]
         self.cavity_dim_pos = cavity_dim_pos
+        self.excitation = np.array(['g', 'p', 'e' ])
         self.laser_bool = True    #laser interacts
 
     def hamiltonian(self):
