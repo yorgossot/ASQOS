@@ -63,24 +63,20 @@ class system:
 
         
     def construct_hamiltonian(self):
+        '''
+        Constructs Hamiltonian, corresponding state-vectors and corresponding excitation.
+        '''
+        #Hamiltonian construction
         H = zero_operator(self.flattened_dim_list)
         for elem in self.elements:
             H += elem.hamiltonian()
         self.hamiltonian = H
 
-    def gs_hamiltonian(self):
-        state_excitation = np.empty(self.dim, dtype= f'U{len(self.flattened_dim_list)}')
+        #State and state excitation construction
+        self.excitations = np.empty(self.dim, dtype= f'U{len(self.flattened_dim_list)}')
+        self.states = np.empty(self.dim, dtype= f'U{len(self.flattened_dim_list) * 4 }')
 
-        sub_elem_excitation_list = []
-        for elem in self.elements:
-            for sub_elem in elem.sub_elements:
-                sub_elem_excitation_list.append(sub_elem.excitation)
-        
-        
-               
-        #for sub_elem_excitation in sub_elem_excitation_list.reverse():
-        #    pass
-
+        #This code does "tensor product" for characters
         times_to_be_tensored = 1
         sub_elem_dim_prod = 1
         for elem in self.elements:
@@ -88,16 +84,67 @@ class system:
                 sub_elem_dim_prod *= sub_elem.dim
                 for  t in range( times_to_be_tensored):
                     subblock_start = int(t/times_to_be_tensored*self.dim)
-
                     for i in range(sub_elem.dim):
                         slice_start = int( (i*self.dim / sub_elem_dim_prod ) + subblock_start  )
                         slice_end = int(( (i+1) *self.dim/sub_elem_dim_prod ) + subblock_start )
                         for j in range(slice_start,slice_end):
-                            state_excitation[j] += sub_elem.excitation[i]
+                            self.excitations[j] += sub_elem.excitations[i]
+                            self.states[j] += sub_elem.states[i]
                 times_to_be_tensored *= sub_elem.dim   
-                         
+            
+ 
 
-        print(state_excitation)
+    def construct_gs_hamiltonian(self):
+        '''
+        Constructs ground state Hamiltonian, corresponding state-vectors and corresponding excitation.
+
+        Note that the gs_hamiltonian will be a numpy array and not a qt objeect.
+        '''
+        
+        self.gs_hamiltonian = np.copy(self.hamiltonian.full())      #ISSUE: Try to delete elements of the sparse matrix
+        self.gs_states = np.copy(self.states)
+
+        pos_to_del = []
+        for (i , excitation ) in enumerate(self.excitations) :            
+            for char in excitation:
+                if char not in ('g' , 'q') : pos_to_del.append(i)
+
+        self.gs_hamiltonian = np.delete(self.gs_hamiltonian , pos_to_del , axis= 0)
+        self.gs_hamiltonian = np.delete(self.gs_hamiltonian , pos_to_del , axis= 1)
+        self.gs_states = np.delete(self.gs_states, pos_to_del )
+
+
+    def construct_e1_hamiltonian(self):
+        '''
+        Constructs the first excited state Hamiltonian, corresponding state-vectors and corresponding excitation.
+
+        Note that the e1_hamiltonian will be a numpy array and not a qt objeect.
+        '''
+        
+        self.e1_hamiltonian = np.copy(self.hamiltonian.full())      #ISSUE: Try to delete elements of the sparse matrix
+        self.e1_states = np.copy(self.states)
+
+        
+        pos_to_del = []
+        for (i , excitation ) in enumerate(self.excitations) : 
+            e_num = 0
+            f_num = 0
+            for char in excitation:
+                if char == 'e' or char == 'd' : 
+                    e_num += 1 
+                if char == 'q' : # we cant access starting state
+                    pos_to_del.append(i) 
+                    e_num += 2
+            if e_num != 1 : pos_to_del.append(i) 
+
+
+            
+
+        self.e1_hamiltonian = np.delete(self.e1_hamiltonian , pos_to_del , axis= 0)
+        self.e1_hamiltonian = np.delete(self.e1_hamiltonian , pos_to_del , axis= 1)
+        self.e1_states = np.delete(self.e1_states, pos_to_del )
+        self.e1_excitations = np.delete(self.excitations, pos_to_del )
+
         
 
 
@@ -131,7 +178,7 @@ class element:
             cavities_connected_pos = [dim_pos-2  , dim_pos+1]   
             self.sub_elements.append( fiber( dim_pos, cavities_connected_pos ))
         else:            
-            print(f'Not valid element {type}')
+            print(f'Not valid element {type}. Give o , x and -')
             exit()
 
     def hamiltonian(self):
@@ -164,7 +211,8 @@ class cavity:
         self.dim_pos = dim_pos
         self.atom_dim_pos = atom_dim_pos
         self.system_dim_list =[]
-        self.excitation = np.array(['g','e'])
+        self.excitations = np.array(['g','e'])
+        self.states = np.array(['0','1']) 
 
     def hamiltonian(self): 
         atom_dim = self.system_dim_list[self.atom_dim_pos]
@@ -202,7 +250,8 @@ class fiber:
         self.dim_pos = dim_pos
         self.cavities_connected_pos = cavities_connected_pos
         self.system_dim_list =[]
-        self.excitation = np.array(['g','e'])
+        self.excitations = np.array(['g','e'])
+        self.states = np.array(['0','1']) 
 
     def hamiltonian(self): #return 0 operator
         H = zero_operator(self.system_dim_list)
@@ -221,8 +270,9 @@ class fiber:
             tensor_list = id_operator_list(self.system_dim_list)
             tensor_list[self.dim_pos] =  qt.destroy(self.dim) 
         
-        H += H.dag()     #add hermitian conj
         H = v_fiber * H
+        H += H.dag()     #add hermitian conj
+        
         return H 
 
 class qunyb:
@@ -231,9 +281,9 @@ class qunyb:
 
     index | state |  excitation 
        0  |   0   |      g
-       1  |   1   |      p
+       1  |   1   |      g
        e  |   2   |      e
-       o  |   3   |      p
+       o  |   3   |      d
 
     ...
 
@@ -249,7 +299,8 @@ class qunyb:
         self.dim_pos = dim_pos
         self.system_dim_list =[]
         self.cavity_dim_pos = cavity_dim_pos    
-        self.excitation = np.array(['g', 'p', 'e' , 'p'])
+        self.excitations = np.array(['g', 'g', 'e' , 'd'])
+        self.states = np.array(['0','1' , 'e' , 'o']) 
 
     def hamiltonian(self):
         tensor_list = id_operator_list(self.system_dim_list)
@@ -264,7 +315,7 @@ class qutrit:
     Laser drives |g><e|
     
     index | state |  excitation
-       g  |   0   |      g
+       g  |   0   |      q
        f  |   1   |      p
        E  |   2   |      e
     '''
@@ -273,7 +324,8 @@ class qutrit:
         self.dim_pos = dim_pos
         self.system_dim_list =[]
         self.cavity_dim_pos = cavity_dim_pos
-        self.excitation = np.array(['g', 'p', 'e' ])
+        self.excitations = np.array(['q', 'p', 'e' ])
+        self.states = np.array(['g','f' , 'E']) 
         self.laser_bool = True    #laser interacts
 
     def hamiltonian(self):
