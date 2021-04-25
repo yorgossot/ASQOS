@@ -9,11 +9,12 @@ import skeleton as ys
 # o is Borregaard atom
 # - is fiber
 
-system_string = 'x-o-o'
+
+
+system_string = 'x'
 
 sys = ys.system(system_string)
 
-help(ys.qunyb)
 
 print(sys.dim)
 
