@@ -3,7 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from components import *
 from functions import *
-
+from scipy.sparse import csr_matrix
+import time
 
 class system:
     '''
@@ -61,15 +62,20 @@ class system:
         '''
         Constructs Hamiltonian, corresponding state-vectors and corresponding excitation.
         '''
+
+
         #Hamiltonian construction
         H = zero_operator(self.flattened_dim_list)
         for elem in self.elements:
             H += elem.hamiltonian()
         self.hamiltonian = H
+        
+
 
         #State and state excitation construction
         self.excitations = np.empty(self.dim, dtype= f'U{len(self.flattened_dim_list)}')
         self.states = np.empty(self.dim, dtype= f'U{len(self.flattened_dim_list) * 4 }')
+
 
         #This code does "tensor product" for characters
         times_to_be_tensored = 1
@@ -86,8 +92,7 @@ class system:
                             self.excitations[j] += sub_elem.excitations[i]
                             self.states[j] += sub_elem.states[i]
                 times_to_be_tensored *= sub_elem.dim   
-            
- 
+  
 
     def construct_gs_hamiltonian(self):
         '''
@@ -96,7 +101,7 @@ class system:
         Note that the gs_hamiltonian will be a numpy array and not a qt objeect.
         '''
         
-        self.gs_hamiltonian = np.copy(self.hamiltonian.full())      #ISSUE: Try to delete elements of the sparse matrix
+        self.gs_hamiltonian = csr_matrix.copy(self.hamiltonian.data)     
         self.gs_states = np.copy(self.states)
 
         pos_to_del = []
@@ -104,8 +109,9 @@ class system:
             for char in excitation:
                 if char not in ('g' , 'q') : pos_to_del.append(i)
 
-        self.gs_hamiltonian = np.delete(self.gs_hamiltonian , pos_to_del , axis= 0)
-        self.gs_hamiltonian = np.delete(self.gs_hamiltonian , pos_to_del , axis= 1)
+        self.gs_hamiltonian  = delete_from_csr(self.gs_hamiltonian, row_indices=pos_to_del, col_indices=pos_to_del)
+        self.gs_hamiltonian = self.gs_hamiltonian.toarray()
+        
         self.gs_states = np.delete(self.gs_states, pos_to_del )
 
 
@@ -116,7 +122,7 @@ class system:
         Note that the e1_hamiltonian will be a numpy array and not a qt objeect.
         '''
         
-        self.e1_hamiltonian = np.copy(self.hamiltonian.full())      #ISSUE: Try to delete elements of the sparse matrix
+        self.e1_hamiltonian = csr_matrix.copy(self.hamiltonian.data)        #ISSUE: Try to delete elements of the sparse matrix
         self.e1_states = np.copy(self.states)
 
         
@@ -135,8 +141,9 @@ class system:
 
             
 
-        self.e1_hamiltonian = np.delete(self.e1_hamiltonian , pos_to_del , axis= 0)
-        self.e1_hamiltonian = np.delete(self.e1_hamiltonian , pos_to_del , axis= 1)
+        self.e1_hamiltonian  = delete_from_csr(self.e1_hamiltonian, row_indices=pos_to_del, col_indices=pos_to_del)
+        self.e1_hamiltonian = self.e1_hamiltonian.toarray()
+
         self.e1_states = np.delete(self.e1_states, pos_to_del )
         self.e1_excitations = np.delete(self.excitations, pos_to_del )
 

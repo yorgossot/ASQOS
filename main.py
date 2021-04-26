@@ -4,14 +4,15 @@ import matplotlib.pyplot as plt
 import system as ys
 
 #Atoms. One in each cavity 
-#Can support up to 3 atoms + 1 aux 
-#Issue: use of not sparse matrices in gs_hamiltonian and e1_hamiltonian
+#Can support up to 5 atoms + 1 aux (takes some time)
+
+#Current computational bottleneck: State and state excitation construction
 
 # x is aux 
 # o is Borregaard atom
 # - is fiber
 
-system_string = 'o-x-o'
+system_string = 'o-x-o-o-o'
 
 sys = ys.system(system_string)
 
@@ -25,9 +26,9 @@ sys.construct_hamiltonian()
 #print(sys.excitations)
 sys.construct_gs_hamiltonian()
 print('\n \n --------Ground state------\n')
-#print(sys.gs_hamiltonian)
+print(sys.gs_hamiltonian)
 print(sys.gs_states)
-
+print(f'Ground subspace dimension: {len(sys.gs_states)}')
 
 print('\n \n --------1st excited state------\n')
 sys.construct_e1_hamiltonian()
