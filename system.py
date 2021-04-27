@@ -134,6 +134,13 @@ class system:
         for (coeff , h) in zip(self.H_coeffs,self.H_list):
             h_reduced = delete_from_csr( h.data, row_indices=self.pos_to_del_gs, col_indices=self.pos_to_del_gs).toarray()        
             self.gs_hamiltonian += coeff * h_reduced
+        
+        ones_w_0diag = np.ones((self.gs_dim,self.gs_dim))
+        np.fill_diagonal(ones_w_0diag , 0)
+
+
+        self.gs_hamiltonian = sg.matrix( self.gs_hamiltonian  ) + sg.matrix( self.gs_hamiltonian* ones_w_0diag).conjugate_transpose() 
+
 
 
     def construct_e1_hamiltonian(self):
@@ -149,6 +156,11 @@ class system:
         for (coeff , h) in zip(self.H_coeffs,self.H_list):
             h_reduced = delete_from_csr( h.data, row_indices=self.pos_to_del_e1, col_indices=self.pos_to_del_e1).toarray()        
             self.e1_hamiltonian += coeff * h_reduced       
+
+        ones_w_0diag = np.ones((self.e1_dim,self.e1_dim))
+        np.fill_diagonal(ones_w_0diag , 0)
+
+        self.e1_hamiltonian = sg.matrix( self.e1_hamiltonian  ) + sg.matrix( self.e1_hamiltonian* ones_w_0diag).conjugate_transpose() 
 
 
 class element:

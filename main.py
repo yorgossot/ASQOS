@@ -17,7 +17,7 @@ import system as ys
 
 
 
-system_string = 'x-o-o-o'
+system_string = 'x-o'
 
 sys = ys.system(system_string)
 
