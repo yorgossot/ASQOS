@@ -1,10 +1,12 @@
 import qutip as qt
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.sparse import csr_matrix
+import sage.all as sg
+import time
+
 from components import *
 from functions import *
-from scipy.sparse import csr_matrix
-import time
 
 class system:
     '''
@@ -14,6 +16,8 @@ class system:
     x : auxiliary atom
     o : Borregaard atom
     - : optical fiber
+    
+    Corresponding state-vectors and corresponding excitations will be initialized.
 
     ...
 
@@ -55,27 +59,11 @@ class system:
             elem.system_dim_list = flattened_list
             for sub_elem in elem.sub_elements:
                 sub_elem.system_dim_list = flattened_list
-                
-
-        
-    def construct_hamiltonian(self):
-        '''
-        Constructs Hamiltonian, corresponding state-vectors and corresponding excitation.
-        '''
-
-
-        #Hamiltonian construction
-        H = zero_operator(self.flattened_dim_list)
-        for elem in self.elements:
-            H += elem.hamiltonian()
-        self.hamiltonian = H
-        
 
 
         #State and state excitation construction
         self.excitations = np.empty(self.dim, dtype= f'U{len(self.flattened_dim_list)}')
         self.states = np.empty(self.dim, dtype= f'U{len(self.flattened_dim_list) * 4 }')
-
 
         #This code does "tensor product" for characters
         times_to_be_tensored = 1
@@ -91,8 +79,48 @@ class system:
                         for j in range(slice_start,slice_end):
                             self.excitations[j] += sub_elem.excitations[i]
                             self.states[j] += sub_elem.states[i]
-                times_to_be_tensored *= sub_elem.dim   
-  
+                times_to_be_tensored *= sub_elem.dim  
+
+        # gs_hamiltonian states and positions
+        self.gs_states = np.copy(self.states)
+        self.pos_to_del_gs = []
+        for (i , excitation ) in enumerate(self.excitations) :            
+            for char in excitation:
+                if char not in ('g' , 'q') : 
+                    self.pos_to_del_gs.append(i)
+        self.pos_to_del_gs = list(dict.fromkeys(self.pos_to_del_gs)) #remove duplicates
+                    
+        self.gs_states = np.delete(self.gs_states, self.pos_to_del_gs )
+
+        # e1_hamiltonian states and positions
+        self.e1_states = np.copy(self.states)
+        self.pos_to_del_e1 = []
+        for (i , excitation ) in enumerate(self.excitations) : 
+            e_num = 0
+            f_num = 0
+            for char in excitation:
+                if char == 'e' or char == 'd' : 
+                    e_num += 1 
+                if char == 'q' : # we cant access starting state
+                    self.pos_to_del_e1.append(i) 
+                    e_num += 2
+            if e_num != 1 : self.pos_to_del_e1.append(i) 
+        self.pos_to_del_e1 = list(dict.fromkeys(self.pos_to_del_e1)) #remove duplicates
+        self.e1_states = np.delete(self.e1_states, self.pos_to_del_e1 )
+        self.e1_excitations = np.delete(self.excitations, self.pos_to_del_e1 )
+
+        #lists of 
+        self.H_list = []
+        self.H_coeffs = []
+        for elem in self.elements:
+            for sub_elem in elem.sub_elements:
+                h = sub_elem.hamiltonian()             
+                for (i,h_el) in enumerate(h):
+                    self.H_list.append(h[i])
+                    self.H_coeffs.append(sub_elem.H_coeffs[i])
+       
+
+        
 
     def construct_gs_hamiltonian(self):
         '''
@@ -100,19 +128,12 @@ class system:
 
         Note that the gs_hamiltonian will be a numpy array and not a qt objeect.
         '''
-        
-        self.gs_hamiltonian = csr_matrix.copy(self.hamiltonian.data)     
-        self.gs_states = np.copy(self.states)
+        self.gs_dim = self.dim - len(self.pos_to_del_gs)
+        self.gs_hamiltonian = sg.var('x')*np.zeros((self.gs_dim,self.gs_dim))
 
-        pos_to_del = []
-        for (i , excitation ) in enumerate(self.excitations) :            
-            for char in excitation:
-                if char not in ('g' , 'q') : pos_to_del.append(i)
-
-        self.gs_hamiltonian  = delete_from_csr(self.gs_hamiltonian, row_indices=pos_to_del, col_indices=pos_to_del)
-        self.gs_hamiltonian = self.gs_hamiltonian.toarray()
-        
-        self.gs_states = np.delete(self.gs_states, pos_to_del )
+        for (coeff , h) in zip(self.H_coeffs,self.H_list):
+            h_reduced = delete_from_csr( h.data, row_indices=self.pos_to_del_gs, col_indices=self.pos_to_del_gs).toarray()        
+            self.gs_hamiltonian += coeff * h_reduced
 
 
     def construct_e1_hamiltonian(self):
@@ -122,32 +143,12 @@ class system:
         Note that the e1_hamiltonian will be a numpy array and not a qt objeect.
         '''
         
-        self.e1_hamiltonian = csr_matrix.copy(self.hamiltonian.data)        #ISSUE: Try to delete elements of the sparse matrix
-        self.e1_states = np.copy(self.states)
+        self.e1_dim = self.dim - len(self.pos_to_del_e1)
+        self.e1_hamiltonian = sg.var('x')*np.zeros((self.e1_dim,self.e1_dim))
 
-        
-        pos_to_del = []
-        for (i , excitation ) in enumerate(self.excitations) : 
-            e_num = 0
-            f_num = 0
-            for char in excitation:
-                if char == 'e' or char == 'd' : 
-                    e_num += 1 
-                if char == 'q' : # we cant access starting state
-                    pos_to_del.append(i) 
-                    e_num += 2
-            if e_num != 1 : pos_to_del.append(i) 
-
-
-            
-
-        self.e1_hamiltonian  = delete_from_csr(self.e1_hamiltonian, row_indices=pos_to_del, col_indices=pos_to_del)
-        self.e1_hamiltonian = self.e1_hamiltonian.toarray()
-
-        self.e1_states = np.delete(self.e1_states, pos_to_del )
-        self.e1_excitations = np.delete(self.excitations, pos_to_del )
-
-        
+        for (coeff , h) in zip(self.H_coeffs,self.H_list):
+            h_reduced = delete_from_csr( h.data, row_indices=self.pos_to_del_e1, col_indices=self.pos_to_del_e1).toarray()        
+            self.e1_hamiltonian += coeff * h_reduced       
 
 
 class element:
