@@ -13,7 +13,7 @@ import system as ys
 
 # x is aux in a cavity
 # o is Borregaard atom in a cavity
-# - is fiber
+# - is fiber, in the end connects with the first cavity
 
 
 

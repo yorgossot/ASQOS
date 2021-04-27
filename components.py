@@ -80,8 +80,16 @@ class fiber:
     def hamiltonian(self): #return 0 operator
         H = zero_operator(self.system_dim_list)
         
+        
+        #if fiber in the end, interacts with the first cavity
+        if self.cavities_connected_pos[-1]>len(self.system_dim_list)-1:
+            self.cavities_connected_pos[-1] = 0
+        
+
+
         #adds all contributions that destroy photons in the fiber
-      
+        
+
         H = []
         for (i,cavity_pos) in enumerate(self.cavities_connected_pos):
             tensor_list = id_operator_list(self.system_dim_list)

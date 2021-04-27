@@ -2,6 +2,7 @@ import qutip as qt
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.sparse import csr_matrix
+import sage.all as sg
 
 def zero_operator(dim_list):
     '''
