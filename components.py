@@ -40,7 +40,7 @@ class cavity:
         self.H_coeffs = [sg.var("g", domain='real') ]
         self.gs_e1_interaction = [False]
 
-        self.L_coeffs = [sg.sqrt( sg.var("kappa_c", domain='real' ,  latex_name =r'\kappa_c')) ]
+        self.L_coeffs = [sg.sqrt( sg.var("kappa_c", domain='positive' ,  latex_name =r'\kappa_c')) ]
 
 
     def hamiltonian(self): 
@@ -93,7 +93,7 @@ class fiber:
         self.H_coeffs = [sg.var("v", domain='real' ,  latex_name =r'\nu'), sg.var("v")*sg.exp(sg.I*sg.var('phi', domain='real',  latex_name =r'\phi'))]
         self.gs_e1_interaction = [False,  False]
 
-        self.L_coeffs = [sg.sqrt( sg.var("kappa_b", domain='real' ,  latex_name =r'\kappa_b')) ]
+        self.L_coeffs = [sg.sqrt( sg.var("kappa_b", domain='positive' ,  latex_name =r'\kappa_b')) ]
 
 
     def hamiltonian(self): #return 0 operator
@@ -161,7 +161,7 @@ class qunyb:
         self.H_coeffs = [sg.var("De", domain='real' ,  latex_name =r'\Delta e') ]
         self.gs_e1_interaction = [False]
 
-        self.L_coeffs = [sg.sqrt( sg.var("gamma", domain='real' ,  latex_name =r'\gamma')) ]
+        self.L_coeffs = [sg.sqrt( sg.var("gamma", domain='positive' ,  latex_name =r'\gamma')) ]
 
     def hamiltonian(self):
         tensor_list = id_operator_list(self.system_dim_list)
@@ -206,7 +206,7 @@ class qutrit:
         self.H_coeffs = [sg.var("DE", domain='real' ,  latex_name =r'\Delta E') , sg.var("Omega", domain='real' , latex_name =r'\Omega')]
         self.gs_e1_interaction = [False,  self.laser_bool]     
 
-        self.L_coeffs = [sg.sqrt( sg.var("gamma_g", domain='real' ,  latex_name =r'\gamma_g')) , sg.sqrt( sg.var("gamma_f", domain='real' ,  latex_name =r'\gamma_f'))]
+        self.L_coeffs = [sg.sqrt( sg.var("gamma_g", domain='positive' ,  latex_name =r'\gamma_g')) , sg.sqrt( sg.var("gamma_f", domain='positive' ,  latex_name =r'\gamma_f'))]
 
 
     def hamiltonian(self):

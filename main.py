@@ -17,7 +17,7 @@ import system as ys
 
 
 
-system_string = 'x-'
+system_string = 'x-o-o'
 
 sys = ys.system(system_string)
 
@@ -32,7 +32,7 @@ print(f'Ground subspace dimension: {len(sys.gs_states)}')
 print('\n \n --------1st excited state subspace------\n')
 
 print(sys.e1_hamiltonian)
-#print(sys.e1_states)
+print(sys.e1_states)
 print(f'Excited subspace dimension: {len(sys.e1_states)}')
 
 print('\n \n --------Interaction Terms------\n')

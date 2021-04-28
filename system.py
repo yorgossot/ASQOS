@@ -64,6 +64,11 @@ class system:
         self.construct_e1_hamiltonian()
         print('Constructing interactions V_plus and V_minus ...')
         self.construct_V()
+        print('Constructing NJ_hamiltonian ...')        
+        self.construct_nj_hamiltonian()
+        self.construct_nj_hamiltonian_inverse()
+        print('Constructing eff_hamiltonian ...')   
+        #self.construct_eff_hamiltonian()
         print(f'\nSystem  {system_string}  initialized!')
 
 
@@ -259,12 +264,57 @@ class system:
         for (coeff , h , gs_e1_interaction) in zip(self.H_coeffs,self.H_list , self.gs_e1_int):
             if gs_e1_interaction:
                 h_reduced = delete_from_csr( h.data, row_indices=self.pos_to_del_gs_e1, col_indices=self.pos_to_del_gs_e1).toarray()
-                print()
                 self.V_plus += coeff * sg.matrix(h_reduced)
 
         
         self.V_minus = self.V_plus.conjugate_transpose()
         
+
+    def construct_nj_hamiltonian(self):
+        '''
+        Constructs the nj Hamiltonian.
+        '''
+
+        self.L_sum = sg.matrix( np.zeros((self.e1_gs_dim,self.e1_gs_dim) , dtype = 'complex128')  ) * sg.var('x')
+
+        for (coeff , lindblau) in zip(self.L_coeffs ,self.Lindblau_list):
+            l_reduced = delete_from_csr( lindblau.data, row_indices=self.pos_to_del_gs_e1, col_indices=self.pos_to_del_gs_e1).toarray()      
+            L = coeff * sg.matrix( l_reduced  )  
+            self.L_sum +=  L.conjugate_transpose() * L 
+        
+
+        self.nj_hamiltonian = self.e1_hamiltonian - sg.I /2 * self.L_sum
+
+        print(self.nj_hamiltonian)
+
+
+    def construct_nj_hamiltonian_inverse(self):
+        '''
+        Constructs nj_hamiltonian_inverse.
+        
+        Finds zero (row and columns) that make the array non singular. 
+        Add 1 on the diagonal, then invert  and then set the elements back to zero.
+        '''
+        self.nj_hamiltonian_inv = sg.copy(self.nj_hamiltonian)
+
+        #
+        zero_pos = []
+        for i in range(self.gs_e1_dim):         
+            if self.nj_hamiltonian_inv[i,:].is_zero()  and self.nj_hamiltonian_inv[i,:].is_zero() :
+                zero_pos.append(i)
+                self.nj_hamiltonian_inv[i,i] = 1
+
+        self.nj_hamiltonian_inv = self.nj_hamiltonian_inv.inverse()
+
+        #revert it back to its original form
+        for i in zero_pos:         
+            self.nj_hamiltonian_inv[i,i] = 0
+
+
+
+
+
+
 
 
 
