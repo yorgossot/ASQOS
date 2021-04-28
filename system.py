@@ -53,12 +53,18 @@ class system:
             self.dim_list.append(self.elements[-1].dim_list)
 
         self.update_subelements()
+        print('Constructing states and excitations...')
         self.construct_states_and_excitations()
+        print('Constructing ground and first-excited statespace...')
         self.construct_gs_e1_subspace()
-        self.obtain_energy_info()      
+        self.obtain_energy_info()    
+        print('Constructing gs_hamiltonian ...')  
         self.construct_gs_hamiltonian()
+        print('Constructing e1_hamiltonian ...') 
         self.construct_e1_hamiltonian()
+        print('Constructing interactions V_plus and V_minus ...')
         self.construct_V()
+        print(f'\nSystem  {system_string}  initialized!')
 
 
     def update_subelements(self):
@@ -116,8 +122,7 @@ class system:
             if e1_del_flag and gs_del_flag:
                 self.pos_to_del_gs_e1.append(i)
         
-        all_pos = [*range(self.dim)]
-        self.pos_gs_e1 = [i for i in all_pos if i not in self.pos_to_del_gs_e1]  #all positions that contain gs_e1
+        #self.pos_gs_e1 = [i for i in [*range(self.dim)] if i not in self.pos_to_del_gs_e1]   DELETED DUE TO IT BEING TOO SLOW
         self.gs_e1_dim = self.dim - len(self.pos_to_del_gs_e1)
         self.gs_e1_excitations = np.delete(self.excitations , self.pos_to_del_gs_e1)
         self.gs_e1_states = np.delete(self.states , self.pos_to_del_gs_e1)
