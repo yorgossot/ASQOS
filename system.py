@@ -205,7 +205,7 @@ class system:
                  
 
 
-        self.gs_hamiltonian =  self.gs_hamiltonian   + elementwise(sg.operator.mul, self.gs_hamiltonian , ones_w_0diag)
+        self.gs_hamiltonian =  self.gs_hamiltonian   + elementwise(sg.operator.mul, self.gs_hamiltonian , ones_w_0diag).conjugate_transpose()
 
 
 
@@ -228,7 +228,8 @@ class system:
         np.fill_diagonal(ones_w_0diag , 0)
         ones_w_0diag = sg.matrix(ones_w_0diag ) + sg.var('x')*sg.matrix(np.zeros((self.gs_e1_dim,self.gs_e1_dim)))
 
-        self.e1_hamiltonian = self.e1_hamiltonian   + elementwise(sg.operator.mul, self.e1_hamiltonian , ones_w_0diag)
+        self.e1_hamiltonian = self.e1_hamiltonian   + elementwise(sg.operator.mul, self.e1_hamiltonian , ones_w_0diag).conjugate_transpose()
+
 
 
 
