@@ -17,7 +17,7 @@ import system as ys
 
 
 
-system_string = 'x-o'
+system_string = 'o-x'
 
 sys = ys.system(system_string)
 
@@ -31,6 +31,8 @@ print(f'Ground subspace dimension: {len(sys.gs_states)}')
 
 print('\n \n --------1st excited state------\n')
 sys.construct_e1_hamiltonian()
-print(sys.e1_hamiltonian)
+#print(sys.e1_hamiltonian)
 #print(sys.e1_states)
 print(f'Excited subspace dimension: {len(sys.e1_states)}')
+
+sys.construct_V()
