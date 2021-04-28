@@ -51,7 +51,20 @@ class system:
             dim_pos +=  self.elements[-1].size
             self.dim *=  self.elements[-1].dim
             self.dim_list.append(self.elements[-1].dim_list)
-        #Communicate the dimension_list to all (sub)elements
+
+        self.update_subelements()
+        self.construct_states_and_excitations()
+        self.construct_gs_e1_subspace()
+        self.obtain_energy_info()      
+        self.construct_gs_hamiltonian()
+        self.construct_e1_hamiltonian()
+        self.construct_V()
+
+
+    def update_subelements(self):
+        '''
+        Communicate the dimension_list to all (sub)elements
+        '''
         flatten = lambda t: [item for sublist in t for item in sublist] #expression that flattens list
         flattened_list = flatten(self.dim_list)
         self.flattened_dim_list = flattened_list 
@@ -61,7 +74,8 @@ class system:
                 sub_elem.system_dim_list = flattened_list
 
 
-        #State and state excitation construction
+
+    def construct_states_and_excitations(self):
         self.excitations = np.empty(self.dim, dtype= f'U{len(self.flattened_dim_list)}')
         self.states = np.empty(self.dim, dtype= f'U{len(self.flattened_dim_list) * 4 }')
 
@@ -79,12 +93,12 @@ class system:
                         for j in range(slice_start,slice_end):
                             self.excitations[j] += sub_elem.excitations[i]
                             self.states[j] += sub_elem.states[i]
-                times_to_be_tensored *= sub_elem.dim  
+                times_to_be_tensored *= sub_elem.dim         
 
-        
-        
-        #Construct gs_e1 subspace
 
+                
+    def construct_gs_e1_subspace(self):
+        
         self.pos_to_del_gs_e1 = []
         for (i , excitation ) in enumerate(self.excitations) :
             gs_del_flag = False
@@ -101,20 +115,12 @@ class system:
             
             if e1_del_flag and gs_del_flag:
                 self.pos_to_del_gs_e1.append(i)
-
-
- 
         
         all_pos = [*range(self.dim)]
         self.pos_gs_e1 = [i for i in all_pos if i not in self.pos_to_del_gs_e1]  #all positions that contain gs_e1
         self.gs_e1_dim = self.dim - len(self.pos_to_del_gs_e1)
         self.gs_e1_excitations = np.delete(self.excitations , self.pos_to_del_gs_e1)
         self.gs_e1_states = np.delete(self.states , self.pos_to_del_gs_e1)
-
-  
-
-    
-
 
         # gs_hamiltonian states and positions in gs_e1 subspace
 
@@ -156,7 +162,8 @@ class system:
         self.e1_excitations = np.delete(self.gs_e1_excitations, self.pos_to_del_e1 )
 
 
-        #lists of 
+
+    def obtain_energy_info(self):
         self.H_list = []
         self.H_coeffs = []
         self.gs_e1_int =[]
@@ -167,9 +174,8 @@ class system:
                     self.H_list.append(h[i])
                     self.H_coeffs.append(sub_elem.H_coeffs[i])
                     self.gs_e1_int.append(sub_elem.gs_e1_interaction[i])
-       
 
-        
+
 
     def construct_gs_hamiltonian(self):
         '''
@@ -188,7 +194,6 @@ class system:
         
         ones_w_0diag = np.ones((self.gs_e1_dim,self.gs_e1_dim))
         np.fill_diagonal(ones_w_0diag , 0)
-
 
         self.gs_hamiltonian = sg.matrix( self.gs_hamiltonian  ) + sg.matrix( self.gs_hamiltonian* ones_w_0diag).conjugate_transpose() 
 
@@ -215,6 +220,7 @@ class system:
         self.e1_hamiltonian = sg.matrix( self.e1_hamiltonian  ) + sg.matrix( self.e1_hamiltonian* ones_w_0diag).conjugate_transpose() 
 
 
+
     def construct_V(self):
         '''
         Constructs  V+ and V- in gs_e1 subspace, corresponding state-vectors and corresponding excitation.
@@ -232,6 +238,7 @@ class system:
         self.V_plus = sg.matrix( self.V_plus )
         self.V_minus = self.V_plus.conjugate_transpose()
         
+
 
 
 
