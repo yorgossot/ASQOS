@@ -76,7 +76,7 @@ class fiber:
         self.system_dim_list =[]
         self.excitations = np.array(['g','e'])
         self.states = np.array(['0','1']) 
-        self.H_coeffs = [sg.var("v", domain='real'), sg.var("v")*sg.exp(sg.I*sg.var('phi', domain='real'))]
+        self.H_coeffs = [sg.var("v", domain='real' ,  latex_name =r'\nu'), sg.var("v")*sg.exp(sg.I*sg.var('phi', domain='real',  latex_name =r'\phi'))]
         self.gs_e1_interaction = [False,  False]
 
     def hamiltonian(self): #return 0 operator
@@ -128,7 +128,7 @@ class qunyb:
         self.cavity_dim_pos = cavity_dim_pos    
         self.excitations = np.array(['g', 'g', 'e' , 'd'])
         self.states = np.array(['0','1' , 'e' , 'o']) 
-        self.H_coeffs = [sg.var("De", domain='real') ]
+        self.H_coeffs = [sg.var("De", domain='real' ,  latex_name =r'\Delta e') ]
         self.gs_e1_interaction = [False]
 
 
@@ -158,7 +158,7 @@ class qutrit:
         self.excitations = np.array(['q', 'p', 'e' ])
         self.states = np.array(['g','f' , 'E']) 
         self.laser_bool = True    
-        self.H_coeffs = [sg.var("DE", domain='real') , sg.var("Omega", domain='real')]
+        self.H_coeffs = [sg.var("DE", domain='real' ,  latex_name =r'\Delta E') , sg.var("Omega", domain='real' , latex_name =r'\Omega')]
         self.gs_e1_interaction = [False,  self.laser_bool]     
 
     def hamiltonian(self):
