@@ -188,19 +188,24 @@ class system:
 
         Note that the gs_hamiltonian will be a numpy array and not a qt objeect.
         '''
-        self.gs_hamiltonian = sg.var('x')*np.zeros((self.gs_e1_dim,self.gs_e1_dim))
+        self.gs_hamiltonian = np.zeros((self.gs_e1_dim,self.gs_e1_dim) , dtype = 'complex128')
 
+        self.gs_hamiltonian = sg.matrix(self.gs_hamiltonian )
 
         for (coeff , h) in zip(self.H_coeffs,self.H_list):
             h_reduced = delete_from_csr( h.data, row_indices=self.pos_to_del_gs_e1, col_indices=self.pos_to_del_gs_e1).toarray() 
             h_reduced[self.pos_e1, :]  = 0
             h_reduced[: , self.pos_e1] = 0
-            self.gs_hamiltonian += coeff * h_reduced
+            self.gs_hamiltonian = self.gs_hamiltonian + coeff * sg.matrix(h_reduced)
         
         ones_w_0diag = np.ones((self.gs_e1_dim,self.gs_e1_dim))
         np.fill_diagonal(ones_w_0diag , 0)
+        ones_w_0diag = sg.matrix(ones_w_0diag ) + sg.var('x')*sg.matrix(np.zeros((self.gs_e1_dim,self.gs_e1_dim)))
 
-        self.gs_hamiltonian = sg.matrix( self.gs_hamiltonian  ) + sg.matrix( self.gs_hamiltonian* ones_w_0diag).conjugate_transpose() 
+                 
+
+
+        self.gs_hamiltonian =  self.gs_hamiltonian   + elementwise(sg.operator.mul, self.gs_hamiltonian , ones_w_0diag)
 
 
 
@@ -211,18 +216,19 @@ class system:
         Note that the e1_hamiltonian will be a numpy array and not a qt objeect.
         '''
         
-        self.e1_hamiltonian = sg.var('x')*np.zeros((self.gs_e1_dim,self.gs_e1_dim))
+        self.e1_hamiltonian = sg.matrix ( np.zeros((self.gs_e1_dim,self.gs_e1_dim), dtype = 'complex128') )
 
         for (coeff , h) in zip(self.H_coeffs,self.H_list):
             h_reduced = delete_from_csr( h.data, row_indices=self.pos_to_del_gs_e1, col_indices=self.pos_to_del_gs_e1).toarray()
             h_reduced[self.pos_gs, :]  = 0
             h_reduced[: , self.pos_gs] = 0       
-            self.e1_hamiltonian += coeff * h_reduced       
+            self.e1_hamiltonian += coeff * sg.matrix( h_reduced  )     
 
         ones_w_0diag = np.ones((self.gs_e1_dim,self.gs_e1_dim))
         np.fill_diagonal(ones_w_0diag , 0)
+        ones_w_0diag = sg.matrix(ones_w_0diag ) + sg.var('x')*sg.matrix(np.zeros((self.gs_e1_dim,self.gs_e1_dim)))
 
-        self.e1_hamiltonian = sg.matrix( self.e1_hamiltonian  ) + sg.matrix( self.e1_hamiltonian* ones_w_0diag).conjugate_transpose() 
+        self.e1_hamiltonian = self.e1_hamiltonian   + elementwise(sg.operator.mul, self.e1_hamiltonian , ones_w_0diag)
 
 
 
@@ -233,14 +239,15 @@ class system:
         Note that the e1_hamiltonian will be a numpy array and not a qt objeect.
         '''
         self.e1_gs_dim = self.gs_dim + self.e1_dim
-        self.V_plus = sg.var('x')*np.zeros((self.e1_gs_dim,self.e1_gs_dim))
+        self.V_plus = sg.matrix( np.zeros((self.e1_gs_dim,self.e1_gs_dim) , dtype = 'complex128')  ) * sg.var('x')
 
         for (coeff , h , gs_e1_interaction) in zip(self.H_coeffs,self.H_list , self.gs_e1_int):
             if gs_e1_interaction:
                 h_reduced = delete_from_csr( h.data, row_indices=self.pos_to_del_gs_e1, col_indices=self.pos_to_del_gs_e1).toarray()
-                self.V_plus += coeff * h_reduced
+                print()
+                self.V_plus += coeff * sg.matrix(h_reduced)
 
-        self.V_plus = sg.matrix( self.V_plus )
+        
         self.V_minus = self.V_plus.conjugate_transpose()
         
 

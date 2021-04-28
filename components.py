@@ -76,7 +76,7 @@ class fiber:
         self.system_dim_list =[]
         self.excitations = np.array(['g','e'])
         self.states = np.array(['0','1']) 
-        self.H_coeffs = [sg.var("v", domain='real'), sg.var("v")*np.exp(complex(0,1)*sg.var('phi', domain='real'))]
+        self.H_coeffs = [sg.var("v", domain='real'), sg.var("v")*sg.exp(sg.I*sg.var('phi', domain='real'))]
         self.gs_e1_interaction = [False,  False]
 
     def hamiltonian(self): #return 0 operator

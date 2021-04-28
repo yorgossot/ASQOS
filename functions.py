@@ -65,3 +65,17 @@ def delete_from_csr(mat, row_indices=[], col_indices=[]):
         return mat[:,mask]
     else:
         return mat
+
+
+def elementwise(operator, M, N):
+    '''
+    SageMath elementwise operartion
+    https://ask.sagemath.org/question/10707/element-wise-operations/
+    '''
+    assert(M.parent() == N.parent())
+    nc, nr = M.ncols(), M.nrows()
+    A = sg.copy(M.parent().zero())
+    for r in range(nr):
+        for c in range(nc):
+            A[r,c] = operator(M[r,c], N[r,c])
+    return A
