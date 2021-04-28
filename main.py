@@ -31,7 +31,7 @@ print(f'Ground subspace dimension: {len(sys.gs_states)}')
 
 print('\n \n --------1st excited state------\n')
 sys.construct_e1_hamiltonian()
-#print(sys.e1_hamiltonian)
+print(sys.e1_hamiltonian)
 #print(sys.e1_states)
 print(f'Excited subspace dimension: {len(sys.e1_states)}')
 

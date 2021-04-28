@@ -111,6 +111,7 @@ class system:
         self.gs_e1_excitations = np.delete(self.excitations , self.pos_to_del_gs_e1)
         self.gs_e1_states = np.delete(self.states , self.pos_to_del_gs_e1)
 
+  
 
     
 
@@ -123,8 +124,12 @@ class system:
                 if char not in ('g' , 'q') : 
                     self.pos_to_del_gs.append(i)
         self.pos_to_del_gs = list(dict.fromkeys(self.pos_to_del_gs)) #remove duplicates
+        
+        self.gs_dim = self.gs_e1_dim - len(self.pos_to_del_gs)
 
-        self.gs_dim = self.gs_e1_dim - len(self.pos_to_del_gs)                
+        self.pos_gs = [i for i in [*range(self.gs_dim)] if i not in self.pos_to_del_gs]  #all positions that contain gs in gs_e1
+
+                
         self.gs_states = np.delete(self.gs_e1_states, self.pos_to_del_gs )
         self.gs_excitations = np.delete(self.gs_e1_excitations, self.pos_to_del_gs )
 
@@ -142,18 +147,15 @@ class system:
                     e_num += 2
             if e_num != 1 : self.pos_to_del_e1.append(i) 
         self.pos_to_del_e1 = list(dict.fromkeys(self.pos_to_del_e1)) #remove duplicates
-
+        
         self.e1_dim = self.gs_e1_dim - len(self.pos_to_del_e1)  
+
+        self.pos_e1 = [i for i in [*range(self.e1_dim)] if i not in self.pos_to_del_e1]  #all positions that contain gs in gs_e1
+
         self.e1_states = np.delete(self.gs_e1_states, self.pos_to_del_e1 )
         self.e1_excitations = np.delete(self.gs_e1_excitations, self.pos_to_del_e1 )
 
-        '''
-        #gs_e1 subspace       
-        self.pos_to_del_gs_e1 = list(set(self.pos_to_del_gs).intersection(self.pos_to_del_e1))
-        self.gs_e1_states = np.copy(self.states)
-        self.gs_e1_states = np.delete(self.gs_e1_states, self.pos_to_del_gs_e1 )
-        self.gs_e1_excitations = np.delete(self.excitations, self.pos_to_del_gs_e1 )
-        '''
+
         #lists of 
         self.H_list = []
         self.H_coeffs = []
@@ -171,19 +173,20 @@ class system:
 
     def construct_gs_hamiltonian(self):
         '''
-        Constructs ground state Hamiltonian, corresponding state-vectors and corresponding excitation.
+        Constructs ground state Hamiltonian in gs_e1 subspace, corresponding state-vectors and corresponding excitation.
 
         Note that the gs_hamiltonian will be a numpy array and not a qt objeect.
         '''
-        self.gs_hamiltonian = sg.var('x')*np.zeros((self.gs_dim,self.gs_dim))
+        self.gs_hamiltonian = sg.var('x')*np.zeros((self.gs_e1_dim,self.gs_e1_dim))
 
 
         for (coeff , h) in zip(self.H_coeffs,self.H_list):
-            h_reduced = delete_from_csr( h.data, row_indices=self.pos_to_del_gs_e1, col_indices=self.pos_to_del_gs_e1)
-            h_reduced = delete_from_csr( h_reduced, row_indices=self.pos_to_del_gs, col_indices=self.pos_to_del_gs).toarray()        
+            h_reduced = delete_from_csr( h.data, row_indices=self.pos_to_del_gs_e1, col_indices=self.pos_to_del_gs_e1).toarray() 
+            h_reduced[self.pos_e1, :]  = 0
+            h_reduced[: , self.pos_e1] = 0
             self.gs_hamiltonian += coeff * h_reduced
         
-        ones_w_0diag = np.ones((self.gs_dim,self.gs_dim))
+        ones_w_0diag = np.ones((self.gs_e1_dim,self.gs_e1_dim))
         np.fill_diagonal(ones_w_0diag , 0)
 
 
@@ -193,20 +196,20 @@ class system:
 
     def construct_e1_hamiltonian(self):
         '''
-        Constructs the first excited state Hamiltonian, corresponding state-vectors and corresponding excitation.
+        Constructs the first excited state Hamiltonian in gs_e1 subspace, corresponding state-vectors and corresponding excitation.
 
         Note that the e1_hamiltonian will be a numpy array and not a qt objeect.
         '''
         
-        self.e1_hamiltonian = sg.var('x')*np.zeros((self.e1_dim,self.e1_dim))
+        self.e1_hamiltonian = sg.var('x')*np.zeros((self.gs_e1_dim,self.gs_e1_dim))
 
         for (coeff , h) in zip(self.H_coeffs,self.H_list):
-            h_reduced = delete_from_csr( h.data, row_indices=self.pos_to_del_gs_e1, col_indices=self.pos_to_del_gs_e1)       
-            h_reduced = delete_from_csr( h_reduced , row_indices=self.pos_to_del_e1, col_indices=self.pos_to_del_e1).toarray()
-
+            h_reduced = delete_from_csr( h.data, row_indices=self.pos_to_del_gs_e1, col_indices=self.pos_to_del_gs_e1).toarray()
+            h_reduced[self.pos_gs, :]  = 0
+            h_reduced[: , self.pos_gs] = 0       
             self.e1_hamiltonian += coeff * h_reduced       
 
-        ones_w_0diag = np.ones((self.e1_dim,self.e1_dim))
+        ones_w_0diag = np.ones((self.gs_e1_dim,self.gs_e1_dim))
         np.fill_diagonal(ones_w_0diag , 0)
 
         self.e1_hamiltonian = sg.matrix( self.e1_hamiltonian  ) + sg.matrix( self.e1_hamiltonian* ones_w_0diag).conjugate_transpose() 
