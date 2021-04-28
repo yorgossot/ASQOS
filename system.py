@@ -67,8 +67,8 @@ class system:
         print('Constructing NJ_hamiltonian ...')        
         self.construct_nj_hamiltonian()
         self.construct_nj_hamiltonian_inverse()
-        print('Constructing eff_hamiltonian ...')   
-        #self.construct_eff_hamiltonian()
+        print('Constructing eff_hamiltonian and effective lindblau operators ...')   
+        self.construct_eff_hamiltonian_lindblaus()
         print(f'\nSystem  {system_string}  initialized!')
 
 
@@ -236,7 +236,6 @@ class system:
         '''
         
         self.e1_hamiltonian = sg.matrix ( np.zeros((self.gs_e1_dim,self.gs_e1_dim), dtype = 'complex128') )
-
         for (coeff , h) in zip(self.H_coeffs,self.H_list):
             h_reduced = delete_from_csr( h.data, row_indices=self.pos_to_del_gs_e1, col_indices=self.pos_to_del_gs_e1).toarray()
             h_reduced[self.pos_gs, :]  = 0
@@ -285,7 +284,6 @@ class system:
 
         self.nj_hamiltonian = self.e1_hamiltonian - sg.I /2 * self.L_sum
 
-        print(self.nj_hamiltonian)
 
 
     def construct_nj_hamiltonian_inverse(self):
@@ -296,8 +294,6 @@ class system:
         Add 1 on the diagonal, then invert  and then set the elements back to zero.
         '''
         self.nj_hamiltonian_inv = sg.copy(self.nj_hamiltonian)
-
-        #
         zero_pos = []
         for i in range(self.gs_e1_dim):         
             if self.nj_hamiltonian_inv[i,:].is_zero()  and self.nj_hamiltonian_inv[i,:].is_zero() :
@@ -311,7 +307,23 @@ class system:
             self.nj_hamiltonian_inv[i,i] = 0
 
 
+    def construct_eff_hamiltonian_lindblaus(self):
+        '''
+        Consrtucts effective hamiltonian.
+        '''
+        self.eff_hamiltonian = sg.copy(self.gs_hamiltonian)
+        self.eff_hamiltonian += -1/2*self.V_minus * ( self.nj_hamiltonian_inv +self.nj_hamiltonian_inv.conjugate_transpose() ) * self.V_plus
 
+        #effective operator on gs
+        self.eff_hamiltonian_gs = sg.copy(self.eff_hamiltonian )
+        self.eff_hamiltonian_gs = self.eff_hamiltonian_gs[self.pos_gs,self.pos_gs]
+        
+        self.eff_lindblau_list = []
+        for (coeff , lindblau) in zip(self.L_coeffs ,self.Lindblau_list):
+            l_reduced = delete_from_csr( lindblau.data, row_indices=self.pos_to_del_gs_e1, col_indices=self.pos_to_del_gs_e1).toarray()      
+            L_eff = coeff * sg.matrix( l_reduced  ) * self.nj_hamiltonian_inv * self.V_plus
+            self.eff_lindblau_list.append( L_eff )
+        
 
 
 
