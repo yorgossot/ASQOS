@@ -23,18 +23,17 @@ sys = ys.system(system_string)
 
 print(f'System total dimension:  {sys.dim}')
 
-sys.construct_gs_hamiltonian()
+
 print('\n \n --------Ground state subspace------\n')
 print(sys.gs_hamiltonian)
 print(sys.gs_states)
 print(f'Ground subspace dimension: {len(sys.gs_states)}')
 
 print('\n \n --------1st excited state subspace------\n')
-sys.construct_e1_hamiltonian()
+
 print(sys.e1_hamiltonian)
 #print(sys.e1_states)
 print(f'Excited subspace dimension: {len(sys.e1_states)}')
 
-sys.construct_V()
 print('\n \n --------Interaction Terms------\n')
 print(sys.V_plus+sys.V_minus)

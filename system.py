@@ -169,16 +169,30 @@ class system:
 
 
     def obtain_energy_info(self):
+        '''
+        Fetches Hamiltonians and Lindblau operators from components.
+        '''
         self.H_list = []
         self.H_coeffs = []
         self.gs_e1_int =[]
+        
+        self.Lindblau_list = []
+        self.L_coeffs = []
+        
         for elem in self.elements:
             for sub_elem in elem.sub_elements:
+                
                 h = sub_elem.hamiltonian()             
                 for (i,h_el) in enumerate(h):
                     self.H_list.append(h[i])
                     self.H_coeffs.append(sub_elem.H_coeffs[i])
                     self.gs_e1_int.append(sub_elem.gs_e1_interaction[i])
+
+
+                lind = sub_elem.lindblau() 
+                for (i,l_el) in enumerate(lind):
+                    self.Lindblau_list.append(lind[i])
+                    self.L_coeffs.append(sub_elem.L_coeffs[i])
 
 
 

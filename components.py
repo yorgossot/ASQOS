@@ -36,8 +36,12 @@ class cavity:
         self.system_dim_list =[]
         self.excitations = np.array(['g','e'])
         self.states = np.array(['0','1']) 
+        
         self.H_coeffs = [sg.var("g", domain='real') ]
         self.gs_e1_interaction = [False]
+
+        self.L_coeffs = [sg.sqrt( sg.var("kappa_c", domain='real' ,  latex_name =r'\kappa_c')) ]
+
 
     def hamiltonian(self): 
         atom_dim = self.system_dim_list[self.atom_dim_pos]
@@ -51,6 +55,15 @@ class cavity:
 
         H = [qt.tensor(tensor_list)]
         return H 
+
+    def lindblau(self):
+        tensor_list = id_operator_list(self.system_dim_list)
+        tensor_list[self.dim_pos] = qt.destroy(self.dim)
+
+        l1 = [ qt.tensor(tensor_list) ]
+
+        return l1 
+
 
 class fiber:
     '''
@@ -76,8 +89,12 @@ class fiber:
         self.system_dim_list =[]
         self.excitations = np.array(['g','e'])
         self.states = np.array(['0','1']) 
+        
         self.H_coeffs = [sg.var("v", domain='real' ,  latex_name =r'\nu'), sg.var("v")*sg.exp(sg.I*sg.var('phi', domain='real',  latex_name =r'\phi'))]
         self.gs_e1_interaction = [False,  False]
+
+        self.L_coeffs = [sg.sqrt( sg.var("kappa_b", domain='real' ,  latex_name =r'\kappa_b')) ]
+
 
     def hamiltonian(self): #return 0 operator
         H = zero_operator(self.system_dim_list)
@@ -101,6 +118,18 @@ class fiber:
             H.append( qt.tensor(tensor_list)  )
 
         return H 
+
+
+    def lindblau(self):
+        tensor_list = id_operator_list(self.system_dim_list)
+        tensor_list[self.dim_pos] = qt.destroy(self.dim)
+
+        l1 = [qt.tensor(tensor_list)]
+
+        return l1 
+
+
+
 
 class qunyb:
     '''
@@ -128,9 +157,11 @@ class qunyb:
         self.cavity_dim_pos = cavity_dim_pos    
         self.excitations = np.array(['g', 'g', 'e' , 'd'])
         self.states = np.array(['0','1' , 'e' , 'o']) 
+        
         self.H_coeffs = [sg.var("De", domain='real' ,  latex_name =r'\Delta e') ]
         self.gs_e1_interaction = [False]
 
+        self.L_coeffs = [sg.sqrt( sg.var("gamma", domain='real' ,  latex_name =r'\gamma')) ]
 
     def hamiltonian(self):
         tensor_list = id_operator_list(self.system_dim_list)
@@ -138,6 +169,19 @@ class qunyb:
         tensor_list[self.dim_pos] = e_state_vector.proj()
         H = [qt.tensor(tensor_list)]
         return H
+
+
+    def lindblau(self):
+        e_ket = qt.basis(self.dim,2)
+        o_ket = qt.basis(self.dim,3)
+
+        tensor_list = id_operator_list(self.system_dim_list)
+        tensor_list[self.dim_pos] = o_ket*e_ket.dag()
+
+        l1 = [qt.tensor(tensor_list)]
+
+        return l1 
+
 
 
 class qutrit:
@@ -158,8 +202,12 @@ class qutrit:
         self.excitations = np.array(['q', 'p', 'e' ])
         self.states = np.array(['g','f' , 'E']) 
         self.laser_bool = True    
+        
         self.H_coeffs = [sg.var("DE", domain='real' ,  latex_name =r'\Delta E') , sg.var("Omega", domain='real' , latex_name =r'\Omega')]
         self.gs_e1_interaction = [False,  self.laser_bool]     
+
+        self.L_coeffs = [sg.sqrt( sg.var("gamma_g", domain='real' ,  latex_name =r'\gamma_g')) , sg.sqrt( sg.var("gamma_f", domain='real' ,  latex_name =r'\gamma_f'))]
+
 
     def hamiltonian(self):
         
@@ -180,3 +228,22 @@ class qutrit:
             H2 = 0* qt.tensor(tensor_list) 
         
         return [H1 , H2]
+
+    def lindblau(self):
+        E_ket = qt.basis(self.dim,2)
+        g_ket = qt.basis(self.dim,0)
+        f_ket = qt.basis(self.dim,1)
+
+        tensor_list = id_operator_list(self.system_dim_list)
+        tensor_list[self.dim_pos] = f_ket*E_ket.dag()
+
+        l1 = qt.tensor(tensor_list)
+
+
+        tensor_list = id_operator_list(self.system_dim_list)
+        tensor_list[self.dim_pos] = g_ket*E_ket.dag()
+
+        l2 = qt.tensor(tensor_list)
+
+        return [l1 , l2]
+
