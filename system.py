@@ -65,8 +65,9 @@ class system:
         self.construct_e1_hamiltonian()
         print('Constructing interactions V_plus and V_minus ...')
         self.construct_V()
-        print('Constructing NJ_hamiltonian ...')        
+        print('Constructing NJ_hamiltonian  ...')        
         self.construct_nj_hamiltonian()
+        print('Inverting NJ_hamiltonian  ...')        
         self.construct_nj_hamiltonian_inverse()
         print('Constructing eff_hamiltonian and effective lindblau operators ...')   
         self.construct_eff_hamiltonian_lindblaus()
@@ -378,11 +379,49 @@ class system:
 
     
     def solve_master_equation(self):
-        self.rho_matrix = sg.copy( self.eff_hamiltonian_gs.parent().zero())
+        self.rho_matrix = sg.copy( self.eff_hamiltonian.parent().zero())
+        sg.var('t')
+        
+        self.rhos = []
+        for (i,ii) in enumerate(self.pos_gs):
+            for (j,jj) in enumerate(self.pos_gs):
+                self.rhos.append( sg.function( f'rho_{i}{j}' , latex_name = f'\\rho_{{ {i}{j} }}'  )(t) )
+                self.rho_matrix[ii,jj] = self.rhos[-1]
 
+        #adds commutator
+        self.rho_matrix += -sg.I * (self.eff_hamiltonian *self.rho_matrix - self.rho_matrix * self.eff_hamiltonian )
+
+        #adds sum of lind
+        for l_eff in self.eff_lindblau_list:
+            self.rho_matrix += l_eff* self.rho_matrix * l_eff.conjugate_transpose()
+            
+            ldl_eff = l_eff.conjugate_transpose() * l_eff
+            self.rho_matrix += -1/2 * ( ldl_eff * self.rho_matrix + self.rho_matrix * ldl_eff )
+        
+        self.rho_matrix_rh = self.rho_matrix[self.pos_gs,self.pos_gs]
+
+        self.rho_matrix_lh = sg.copy( self.rho_matrix_rh.parent().zero())
+        ind = 0
         for i in range(self.gs_dim):
             for j in range(self.gs_dim):
-                self.rho_matrix[i,j] = sg.var( f'rho_{i}{j}' , domain = 'real' , latex_name = f'\\rho_{{ {i}{j} }}'  )
+                self.rho_matrix_lh[i,j] = sg.diff( self.rhos[ind] ,t)
+                ind +=1
+
+        '''
+        Solution omitted until  the coefficient mess is fixed.
+        
+        #self.SDEs = self.rho_matrix_lh == self.rho_matrix_rh
+
+        #self.density_matrix_t = sg.desolve_system( self.SDE , self.rhos )
+        '''
+        
+
+
+
+        
+        
+        
+
 
         
 
