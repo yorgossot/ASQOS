@@ -69,6 +69,8 @@ class system:
         self.construct_nj_hamiltonian_inverse()
         print('Constructing eff_hamiltonian and effective lindblau operators ...')   
         self.construct_eff_hamiltonian_lindblaus()
+        print('Solving effective Lindblau master equation ...') 
+        self.solve_master_equation()
         print(f'\nSystem  {system_string}  initialized!')
 
 
@@ -323,7 +325,18 @@ class system:
             l_reduced = delete_from_csr( lindblau.data, row_indices=self.pos_to_del_gs_e1, col_indices=self.pos_to_del_gs_e1).toarray()      
             L_eff = coeff * sg.matrix( l_reduced  ) * self.nj_hamiltonian_inv * self.V_plus
             self.eff_lindblau_list.append( L_eff )
+
+    
+    def solve_master_equation(self):
+        self.rho_matrix = sg.copy( self.eff_hamiltonian_gs.parent().zero())
+
+        for i in range(self.gs_dim):
+            for j in range(self.gs_dim):
+                self.rho_matrix[i,j] = sg.var( f'rho_{i}{j}' , domain = 'real' , latex_name = f'\\rho_{{ {i}{j} }}'  )
+
         
+
+
 
 
 
