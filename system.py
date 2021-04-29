@@ -173,6 +173,8 @@ class system:
         self.e1_states = np.delete(self.gs_e1_states, self.pos_to_del_e1 )
         self.e1_excitations = np.delete(self.gs_e1_excitations, self.pos_to_del_e1 )
 
+        self.gs_e1_matrix_space = sg.MatrixSpace( sg.SR ,self.gs_e1_dim,self.gs_e1_dim ,sparse=False ) 
+
 
 
     def obtain_energy_info(self):
@@ -228,6 +230,8 @@ class system:
 
         self.gs_hamiltonian =  self.gs_hamiltonian   + elementwise(sg.operator.mul, self.gs_hamiltonian , ones_w_0diag).conjugate_transpose()
 
+        self.gs_hamiltonian = self.gs_e1_matrix_space(self.gs_hamiltonian)
+
 
 
     def construct_e1_hamiltonian(self):
@@ -250,6 +254,7 @@ class system:
 
         self.e1_hamiltonian = self.e1_hamiltonian   + elementwise(sg.operator.mul, self.e1_hamiltonian , ones_w_0diag).conjugate_transpose()
 
+        self.e1_hamiltonian = self.gs_e1_matrix_space(self.e1_hamiltonian)
 
 
 
@@ -269,6 +274,9 @@ class system:
 
         
         self.V_minus = self.V_plus.conjugate_transpose()
+
+        self.V_plus = self.gs_e1_matrix_space(self.V_plus)
+        self.V_minus = self.gs_e1_matrix_space(self.V_minus)
         
 
     def construct_nj_hamiltonian(self):
@@ -276,11 +284,11 @@ class system:
         Constructs the nj Hamiltonian.
         '''
 
-        self.L_sum = sg.matrix( np.zeros((self.e1_gs_dim,self.e1_gs_dim) , dtype = 'complex128')  ) * sg.var('x')
+        self.L_sum =  sg.copy(self.V_plus.parent().zero())
 
         for (coeff , lindblau) in zip(self.L_coeffs ,self.Lindblau_list):
             l_reduced = delete_from_csr( lindblau.data, row_indices=self.pos_to_del_gs_e1, col_indices=self.pos_to_del_gs_e1).toarray()      
-            L = coeff * sg.matrix( l_reduced  )  
+            L = coeff * self.gs_e1_matrix_space(l_reduced)
             self.L_sum +=  L.conjugate_transpose() * L 
         
 

@@ -2,7 +2,7 @@ import qutip as qt
 import numpy as np
 import matplotlib.pyplot as plt
 import sage.all as sg
-
+import time 
 import system as ys
 
 
@@ -17,9 +17,12 @@ import system as ys
 
 
 
-system_string = 'x-o-o'
-
+system_string = 'x-o-o-o'
+t0 = time.time()
 sys = ys.system(system_string)
+t1 = time.time()
+
+print((f'\n\nTook   {round(t1-t0)}  to initialize.\n\n'))
 
 print(f'System total dimension:  {sys.dim}')
 
