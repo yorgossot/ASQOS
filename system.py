@@ -446,7 +446,7 @@ class element:
             self.dim_list = [2 , 3]
             cavity_dim_pos = dim_pos
             atom_dim_pos = cavity_dim_pos + 1
-            self.sub_elements.append( cavity(cavity_dim_pos,atom_dim_pos) )
+            self.sub_elements.append( cavity(cavity_dim_pos,[atom_dim_pos]) )  #atom_dim_pos given as a list to cavity
             self.sub_elements.append( qutrit(atom_dim_pos , cavity_dim_pos ) )
         elif type == 'o':            
             self.dim = 2 * 4
@@ -454,7 +454,7 @@ class element:
             self.size = 2
             cavity_dim_pos = dim_pos
             atom_dim_pos = cavity_dim_pos + 1
-            self.sub_elements.append( cavity( cavity_dim_pos, atom_dim_pos) )
+            self.sub_elements.append( cavity( cavity_dim_pos, [atom_dim_pos]) ) #atom_dim_pos given as a list to cavity
             self.sub_elements.append( qunyb(atom_dim_pos , cavity_dim_pos ) )
         elif type == '-':
             self.size = 1
@@ -462,6 +462,17 @@ class element:
             self.dim_list = [2] 
             cavities_connected_pos = [dim_pos-2  , dim_pos+1]   
             self.sub_elements.append( fiber( dim_pos, cavities_connected_pos ))
+        elif type == '2':
+            #borregaard 2015 with 2 atoms
+            self.size = 4
+            self.dim = 2 *3 * 4 * 4
+            self.dim_list = [2 , 3 , 4 , 4] 
+            cavity_dim_pos = dim_pos
+            atom_dim_pos = [cavity_dim_pos + 1   , cavity_dim_pos + 2 , cavity_dim_pos + 3]
+            self.sub_elements.append( cavity(cavity_dim_pos,atom_dim_pos) )
+            self.sub_elements.append( qutrit(atom_dim_pos[0], cavity_dim_pos ) )
+            self.sub_elements.append( qunyb(atom_dim_pos[1] , cavity_dim_pos ) )
+            self.sub_elements.append( qunyb(atom_dim_pos[2] , cavity_dim_pos ) )
         else:            
             print(f'Not valid element {type}. Give o , x and -')
             exit()

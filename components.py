@@ -37,23 +37,25 @@ class cavity:
         self.excitations = np.array(['g','e'])
         self.states = np.array(['0','1']) 
         
-        self.H_coeffs = [sg.var("g", domain='real') ]
-        self.gs_e1_interaction = [False]
+        self.H_coeffs = [sg.var("g", domain='real') ] *len(self.atom_dim_pos)
+        self.gs_e1_interaction = [False] *len(self.atom_dim_pos)
 
         self.L_coeffs = [sg.sqrt( sg.var("kappa_c", domain='positive' ,  latex_name =r'\kappa_c')) ]
 
 
     def hamiltonian(self): 
-        atom_dim = self.system_dim_list[self.atom_dim_pos]
-        e_ket = qt.basis(atom_dim,2)
-        f_ket = qt.basis(atom_dim,1)
-        ef_ketbra = e_ket * f_ket.dag()
+        H = []
+        for atom_dim_pos in self.atom_dim_pos:
+            atom_dim = self.system_dim_list[atom_dim_pos]
+            e_ket = qt.basis(atom_dim,2)
+            f_ket = qt.basis(atom_dim,1)
+            ef_ketbra = e_ket * f_ket.dag()
 
-        tensor_list = id_operator_list(self.system_dim_list)
-        tensor_list[self.dim_pos] = qt.destroy(self.dim)
-        tensor_list[self.atom_dim_pos] = ef_ketbra
+            tensor_list = id_operator_list(self.system_dim_list)
+            tensor_list[self.dim_pos] = qt.destroy(self.dim)
+            tensor_list[atom_dim_pos] = ef_ketbra
 
-        H = [qt.tensor(tensor_list)]
+            H.append(qt.tensor(tensor_list) )
         return H 
 
     def lindblau(self):
