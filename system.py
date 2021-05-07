@@ -53,7 +53,8 @@ class system:
             dim_pos +=  self.elements[-1].size
             self.dim *=  self.elements[-1].dim
             self.dim_list.append(self.elements[-1].dim_list)
-
+        print(f'Initializing system {system_string}  ...')
+        t_start = time.time()
         self.update_subelements()
         print('Constructing states and excitations...')
         self.construct_states_and_excitations()
@@ -72,9 +73,11 @@ class system:
         self.construct_nj_hamiltonian_inverse()
         print('Constructing eff_hamiltonian and effective lindblau operators ...')   
         self.construct_eff_hamiltonian_lindblaus()
-        print('Solving effective Lindblau master equation ...') 
+        print('Constructing effective Lindblau master equation ...') 
         self.solve_master_equation()
-        print(f'\nSystem  {system_string}  initialized!')
+        
+        t_end = time.time()
+        print(f'\nSystem  {system_string}  initialized in {round(t_end-t_start , 1)} seconds.')
 
 
     def update_subelements(self):
