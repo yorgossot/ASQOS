@@ -4,13 +4,6 @@ import matplotlib.pyplot as plt
 import sage.all as sg
 from functions import *
 
-#g = 1         #atom cavity coupling
-#delta_e = 0   #detuning of borregaard atom
-#delta_E = 0   #detuning of aux atom
-#Omega_2 = 0   #omega/2: rabi freq of laser on aux atom
-#Fiber
-#v_fiber = 0   #cavity fiber coupling
-#phi     = 0   #phase in the hamiltonian
 
 class cavity:
     '''
@@ -29,33 +22,22 @@ class cavity:
     -------
    
     '''    
-    def __init__(self , dim_pos , atom_dim_pos  ):
+    def __init__(self , dim_pos  ):
         self.dim = 2
         self.dim_pos = dim_pos
-        self.atom_dim_pos = atom_dim_pos
         self.system_dim_list =[]
         self.excitations = np.array(['g','e'])
         self.states = np.array(['0','1']) 
         
-        self.H_coeffs = [sg.var("g", domain='real') ] *len(self.atom_dim_pos)
-        self.gs_e1_interaction = [False] *len(self.atom_dim_pos)
+        self.H_coeffs = [] 
+        self.gs_e1_interaction = [] 
 
         self.L_coeffs = [sg.sqrt( sg.var("kappa_c", domain='positive' ,  latex_name =r'\kappa_c')) ]
 
 
     def hamiltonian(self): 
         H = []
-        for atom_dim_pos in self.atom_dim_pos:
-            atom_dim = self.system_dim_list[atom_dim_pos]
-            e_ket = qt.basis(atom_dim,2)
-            f_ket = qt.basis(atom_dim,1)
-            ef_ketbra = e_ket * f_ket.dag()
 
-            tensor_list = id_operator_list(self.system_dim_list)
-            tensor_list[self.dim_pos] = qt.destroy(self.dim)
-            tensor_list[atom_dim_pos] = ef_ketbra
-
-            H.append(qt.tensor(tensor_list) )
         return H 
 
     def lindblau(self):
@@ -156,20 +138,37 @@ class qunyb:
         self.dim = 4
         self.dim_pos = dim_pos
         self.system_dim_list =[]
-        self.cavity_dim_pos = cavity_dim_pos    
+        self.cavity_dim_pos = cavity_dim_pos
         self.excitations = np.array(['g', 'g', 'e' , 'd'])
         self.states = np.array(['0','1' , 'e' , 'o']) 
         
-        self.H_coeffs = [sg.var("De", domain='real' ,  latex_name =r'\Delta e') ]
-        self.gs_e1_interaction = [False]
+        self.H_coeffs = [sg.var("De", domain='real' ,  latex_name =r'\Delta e') , sg.var("g", domain='real')]
+        self.gs_e1_interaction = [False , False]
 
         self.L_coeffs = [sg.sqrt( sg.var("gamma", domain='positive' ,  latex_name =r'\gamma')) ]
 
     def hamiltonian(self):
+        H = []
+        
         tensor_list = id_operator_list(self.system_dim_list)
         e_state_vector = qt.basis(self.dim,2)
         tensor_list[self.dim_pos] = e_state_vector.proj()
-        H = [qt.tensor(tensor_list)]
+        H.append(qt.tensor(tensor_list))
+
+
+        #atom cavity interaction
+        e_ket = qt.basis(self.dim,2)
+        f_ket = qt.basis(self.dim,1)
+        ef_ketbra = e_ket * f_ket.dag()
+        
+        cavity_dim = self.system_dim_list[self.cavity_dim_pos]
+        
+        tensor_list = id_operator_list(self.system_dim_list)
+        tensor_list[self.cavity_dim_pos] = qt.destroy(cavity_dim)
+        tensor_list[self.dim_pos] = ef_ketbra
+
+        H.append(qt.tensor(tensor_list) )
+
         return H
 
 
@@ -205,8 +204,8 @@ class qutrit:
         self.states = np.array(['g','f' , 'E']) 
         self.laser_bool = True    
         
-        self.H_coeffs = [sg.var("DE", domain='real' ,  latex_name =r'\Delta E') , sg.var("Omega", domain='real' , latex_name =r'\Omega')]
-        self.gs_e1_interaction = [False,  self.laser_bool]     
+        self.H_coeffs = [sg.var("DE", domain='real' ,  latex_name =r'\Delta E') , sg.var("Omega", domain='real' , latex_name =r'\Omega') , sg.var("g", domain='real')]
+        self.gs_e1_interaction = [False,  self.laser_bool  , False]     
 
         self.L_coeffs = [sg.sqrt( sg.var("gamma_g", domain='positive' ,  latex_name =r'\gamma_g')) , sg.sqrt( sg.var("gamma_f", domain='positive' ,  latex_name =r'\gamma_f'))]
 
@@ -221,7 +220,7 @@ class qutrit:
         H1 = qt.tensor(tensor_list)   #contrubution of excited level
 
 
-
+        #laser interaction
         tensor_list = id_operator_list(self.system_dim_list)
         if self.laser_bool:
             tensor_list[self.dim_pos] = E_ket * g_ket.dag()
@@ -229,7 +228,22 @@ class qutrit:
         else:
             H2 = 0* qt.tensor(tensor_list) 
         
-        return [H1 , H2]
+
+        #atom cavity interaction
+        e_ket = qt.basis(self.dim,2)
+        f_ket = qt.basis(self.dim,1)
+        ef_ketbra = e_ket * f_ket.dag()
+        
+        cavity_dim = self.system_dim_list[self.cavity_dim_pos]
+        
+        tensor_list = id_operator_list(self.system_dim_list)
+        tensor_list[self.cavity_dim_pos] = qt.destroy(cavity_dim)
+        tensor_list[self.dim_pos] = ef_ketbra
+
+        H3 = qt.tensor(tensor_list) 
+
+
+        return [H1 , H2 , H3]
 
     def lindblau(self):
         E_ket = qt.basis(self.dim,2)
