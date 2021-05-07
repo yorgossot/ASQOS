@@ -22,7 +22,7 @@ class element:
             self.dim_list = [2 , 3]
             cavity_dim_pos = dim_pos
             atom_dim_pos = cavity_dim_pos + 1
-            self.sub_elements.append( cavity(cavity_dim_pos,[atom_dim_pos]) )  #atom_dim_pos given as a list to cavity
+            self.sub_elements.append( cavity(cavity_dim_pos) )  
             self.sub_elements.append( qutrit(atom_dim_pos , cavity_dim_pos ) )
         elif type == 'o':            
             self.dim = 2 * 4
@@ -30,7 +30,7 @@ class element:
             self.size = 2
             cavity_dim_pos = dim_pos
             atom_dim_pos = cavity_dim_pos + 1
-            self.sub_elements.append( cavity( cavity_dim_pos, [atom_dim_pos]) ) #atom_dim_pos given as a list to cavity
+            self.sub_elements.append( cavity( cavity_dim_pos) ) 
             self.sub_elements.append( ququad(atom_dim_pos , cavity_dim_pos ) )
         elif type == '-':
             self.size = 1

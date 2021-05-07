@@ -204,7 +204,7 @@ class qutrit:
         self.states = np.array(['g','f' , 'E']) 
         self.laser_bool = True    
         
-        self.H_coeffs = [sg.var("DE", domain='real' ,  latex_name =r'\Delta E') , sg.var("Omega", domain='real' , latex_name =r'\Omega') , sg.var("g", domain='real')]
+        self.H_coeffs = [sg.var("DE", domain='real' ,  latex_name =r'\Delta E') , sg.var("Omega", domain='real' , latex_name =r'\Omega') , sg.var("g_f", domain='real', latex_name =r'g_f')]
         self.gs_e1_interaction = [False,  self.laser_bool  , False]     
 
         self.L_coeffs = [sg.sqrt( sg.var("gamma_g", domain='positive' ,  latex_name =r'\gamma_g')) , sg.sqrt( sg.var("gamma_f", domain='positive' ,  latex_name =r'\gamma_f'))]
