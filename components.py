@@ -115,9 +115,9 @@ class fiber:
 
 
 
-class qunyb:
+class ququad:
     '''
-    Borregaard atom with 4 levels.
+    Atom with 4 levels.
 
     index | state |  excitation 
        0  |   0   |      g
