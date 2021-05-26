@@ -6,6 +6,8 @@ import sage.all as sg
 from collections import Counter
 import time
 
+from scipy.sparse.sputils import matrix
+
 from components import *
 from functions import *
 from elements import *
@@ -18,6 +20,10 @@ class system:
     x : auxiliary atom
     o : Borregaard atom
     - : optical fiber
+
+    Borregaard et al 2015
+    2 : for 2+1 atoms
+    3 : for 3+1 atoms
     
     Corresponding state-vectors and corresponding excitations will be initialized.
 
@@ -42,7 +48,8 @@ class system:
     hamiltonian
     '''
  
-    def __init__(self, system_string):
+    def __init__(self, system_string , MMA = True):
+        self.MMA = MMA
         self.size = len(system_string)
         self.elements = []
         self.dim_list =[]
@@ -361,11 +368,25 @@ class system:
                 zero_pos.append(i)
                 self.nj_hamiltonian_inv[i,i] = 1
 
-        self.nj_hamiltonian_inv = self.nj_hamiltonian_inv.inverse()
+        if self.MMA == True:
+            #invert with mathematica
+            m_temp = self.nj_hamiltonian_inv._mathematica_().Inverse()
+            s_temp = m_temp._sage_()
+            self.nj_hamiltonian_inv = sg.matrix(s_temp)
+            #substitute faulty E from mathematica/ does not work
+            self.nj_hamiltonian_inv = self.nj_hamiltonian_inv.subs( E =  sg.e )
+        else:
+            #invert with sagemath
+            self.nj_hamiltonian_inv = self.nj_hamiltonian_inv.inverse()
 
         #revert it back to its original form
         for i in zero_pos:         
             self.nj_hamiltonian_inv[i,i] = 0
+
+        #simplify through mathematica if there is access to it
+        if self.MMA == True:
+            self.nj_hamiltonian_inv = MMA_simplify_matr(self.nj_hamiltonian_inv)
+
 
 
     def construct_eff_hamiltonian_lindblaus(self):
@@ -382,7 +403,19 @@ class system:
         self.eff_lindblau_list = []
         for (coeff , lindblau) in zip(self.L_coeffs ,self.Lindblau_list):
             l_reduced = delete_from_csr( lindblau.data, row_indices=self.pos_to_del_gs_e1_dec, col_indices=self.pos_to_del_gs_e1_dec).toarray()      
-            L_eff = coeff * sg.matrix( l_reduced  ) * self.nj_hamiltonian_inv * self.V_plus
+            
+            if False == True:
+                # MMA mul does not work yet so this part is not run
+                L_op =  sg.matrix( l_reduced  )._mathematica_()
+                nj_ham_inv = self.nj_hamiltonian_inv._mathematica_()
+                V_p = self.V_plus._mathematica_()
+
+                prod = (L_op * nj_ham_inv * V_p)._sage_()
+                
+                L_eff = coeff * sg.matrix(prod)
+            else:
+                L_eff = coeff * sg.matrix( l_reduced  ) * self.nj_hamiltonian_inv * self.V_plus
+            
             self.eff_lindblau_list.append( L_eff )
 
     
