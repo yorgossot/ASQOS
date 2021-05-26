@@ -79,3 +79,35 @@ def elementwise(operator, M, N):
         for c in range(nc):
             A[r,c] = operator(M[r,c], N[r,c])
     return A
+
+
+def MMA_simplify( expr , full=False):
+    '''
+    Simplifies expression with the use of Mathematica and returns the result in SageMath.
+    Not to be used for matrices.
+    '''
+    if full==True:
+        expr_simpl_m  =  expr._mathematica_().FullSimplify()
+    else:
+        expr_simpl_m  =  expr._mathematica_().Simplify()
+    
+    expr_simpl_sg = expr_simpl_m._sage_()
+
+    return expr_simpl_sg
+
+def MMA_simplify_matr( matr , full=False):
+    '''
+    Simplifies square matrix with the use of Mathematica and returns the result in SageMath.
+    '''
+    if full==True:
+        matr_simpl_m  =  matr._mathematica_().FullSimplify()
+    else:
+        matr_simpl_m  =  matr._mathematica_().Simplify()
+    
+    list_simpl_sg = matr_simpl_m._sage_()  #sagemath creates a list out of the matrix.
+
+
+    matr_simpl_sg = sg.matrix(list_simpl_sg)
+
+    return matr_simpl_sg
+
