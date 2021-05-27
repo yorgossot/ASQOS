@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.sparse import csr_matrix
 import sage.all as sg
+from sage.symbolic.expression_conversions import ExpressionTreeWalker # for the simplif funct
 
 def zero_operator(dim_list):
     '''
@@ -111,3 +112,29 @@ def MMA_simplify_matr( matr , full=False):
 
     return matr_simpl_sg
 
+
+
+class symround(ExpressionTreeWalker):
+    def __init__(self, **kwds):
+        """
+        A class that walks the tree and replaces numbers by numerical
+        approximations with the given keywords to `numerical_approx`.
+        EXAMPLES::
+            sage: var('F_A,X_H,X_K,Z_B')
+            sage: expr = 0.0870000000000000*F_A + X_H + X_K + 0.706825181105366*Z_B - 0.753724599483948
+            sage: SubstituteNumericalApprox(digits=3)(expr)
+            0.0870*F_A + X_H + X_K + 0.707*Z_B - 0.754
+
+        Taken from:
+        https://ask.sagemath.org/question/46059/is-it-possible-to-round-numbers-in-symbolic-expression/#46061
+        """
+        self.kwds = kwds
+
+    def pyobject(self, ex, obj):
+        if hasattr(obj, 'numerical_approx'):
+            if hasattr(obj, 'parent'):
+                if obj.parent()==sg.IntegerRing():
+                    return obj
+            return obj.numerical_approx(**self.kwds)
+        else:
+            return obj
