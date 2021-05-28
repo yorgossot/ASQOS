@@ -385,7 +385,7 @@ class system:
 
         #simplify through mathematica if there is access to it
         if self.MMA == True:
-            self.nj_hamiltonian_inv = MMA_simplify_matr(self.nj_hamiltonian_inv)
+            self.nj_hamiltonian_inv = MMA_simplify(self.nj_hamiltonian_inv)
 
 
 

@@ -113,7 +113,7 @@ def is_integer_num(n):
         return n.is_integer()
     return False
 
-class symround(ExpressionTreeWalker):
+class symround_class(ExpressionTreeWalker):
     def __init__(self, **kwds):
         """
         A class that walks the tree and replaces numbers by numerical
@@ -121,7 +121,7 @@ class symround(ExpressionTreeWalker):
         EXAMPLES::
             sage: var('F_A,X_H,X_K,Z_B')
             sage: expr = 0.0870000000000000*F_A + X_H + X_K + 0.706825181105366*Z_B - 0.753724599483948
-            sage: SubstituteNumericalApprox(digits=3)(expr)
+            sage: symround_class(digits=3)(expr)
             0.0870*F_A + X_H + X_K + 0.707*Z_B - 0.754
 
         Taken from:
@@ -131,22 +131,24 @@ class symround(ExpressionTreeWalker):
 
     def pyobject(self, ex, obj):
         if hasattr(obj, 'numerical_approx'):
-            if hasattr(obj, 'parent'):
-                #dont spoil integers
-                if obj.parent()==sg.IntegerRing():
-                    return obj
-                #if a float is integer, transform it
-                if obj.is_integer():
-                    return sg.Integer(obj)
-                #if a float is too small, delete it
-                if abs(obj)<1e-12:
-                    print(f'symround: Deleted coefficient {obj}')
-                    return 0
-                
-                #simplify complex numbers
-                if obj not in sg.RR:
-                    re = obj.real()
-                    im = obj.imag()
+            if hasattr(obj, 'parent'):               
+                if obj in sg.RealField(): 
+                    obj = sg.real(obj).numerical_approx(**self.kwds)
+                    #simplify real numbers 
+                    #dont spoil integers
+                    if obj.parent()==sg.IntegerRing():
+                        return obj
+                    #if a float is integer, transform it into sg.Integer
+                    if obj.is_integer():
+                        return sg.Integer(obj)
+                    #if a float is too small, delete it
+                    if abs(obj)<1e-12:
+                        print(f'symround: Deleted coefficient {obj}')
+                        return 0                
+                else:
+                    #simplify complex numbers
+                    re = obj.real().numerical_approx(**self.kwds)
+                    im = obj.imag().numerical_approx(**self.kwds)
                     if abs(re)<1e-10 and re!=0:
                         print(f'symround: Deleted coefficient {re}')
                         re = 0
@@ -166,9 +168,20 @@ class symround(ExpressionTreeWalker):
             return obj
 
 
-def symround_matr(matr):
+from collections.abc import Iterable
+def symround(expr):
     '''
     Uses symround to apply it to matrices.
     '''
-
+    if isinstance(expr,Iterable):
+        #expression is a matrix
+        matr = expr
+        nc, nr = matr.ncols(), matr.nrows()
+        A = sg.copy(matr.parent().zero())
+        for r in range(nr):
+            for c in range(nc):
+                A[r,c] = symround_class(digits=1)(matr[r,c])
+        return A
+    else:
+        return symround_class(digits=1)(expr)
 
