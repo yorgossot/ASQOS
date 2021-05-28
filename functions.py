@@ -169,7 +169,7 @@ class symround_class(ExpressionTreeWalker):
 
 
 from collections.abc import Iterable
-def symround(expr):
+def symround(expr,digits=1):
     '''
     Uses symround to apply it to matrices.
     '''
@@ -180,8 +180,8 @@ def symround(expr):
         A = sg.copy(matr.parent().zero())
         for r in range(nr):
             for c in range(nc):
-                A[r,c] = symround_class(digits=1)(matr[r,c])
+                A[r,c] = symround_class(digits=digits)(matr[r,c])
         return A
     else:
-        return symround_class(digits=1)(expr)
+        return symround_class(digits=digits)(expr)
 
