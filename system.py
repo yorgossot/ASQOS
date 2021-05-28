@@ -421,7 +421,7 @@ class system:
     
     def solve_master_equation(self):
         self.rho_matrix = sg.copy( self.eff_hamiltonian.parent().zero())
-        sg.var('t')
+        t =sg.var('t')
         
         self.rhos = []
         for (i,ii) in enumerate(self.pos_gs):
