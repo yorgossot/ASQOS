@@ -113,6 +113,16 @@ def MMA_simplify_matr( matr , full=False):
     return matr_simpl_sg
 
 
+def is_integer_num(n):
+    '''
+    Is used in the next class.
+    https://note.nkmk.me/en/python-check-int-float/
+    '''
+    if isinstance(n, int):
+        return True
+    else:
+        return n.is_integer()
+    return False
 
 class symround(ExpressionTreeWalker):
     def __init__(self, **kwds):
@@ -145,7 +155,7 @@ class symround(ExpressionTreeWalker):
                     return 0
                 
                 #simplify complex numbers
-                if obj not in RR:
+                if obj not in sg.RR:
                     re = obj.real()
                     im = obj.imag()
                     if abs(re)<1e-10 and re!=0:
@@ -155,11 +165,11 @@ class symround(ExpressionTreeWalker):
                         print(f'symround: Deleted coefficient {im}')
                         im = 0
                     #check if any of the im real parts is imaginary
-                    if re.is_integer() and im.is_integer():
+                    if is_integer_num(re) and is_integer_num(im):
                         return sg.Integer(re) + sg.I * sg.Integer(im)
-                    if re.is_integer():
+                    if is_integer_num(re):
                         return sg.Integer(re) + sg.I * im.numerical_approx(**self.kwds)
-                    if im.is_integer():
+                    if is_integer_num(im):
                         return re.numerical_approx(**self.kwds) + sg.I * sg.Integer(im)           
                 
             return obj.numerical_approx(**self.kwds)
