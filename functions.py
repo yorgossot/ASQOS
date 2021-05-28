@@ -133,8 +133,35 @@ class symround(ExpressionTreeWalker):
     def pyobject(self, ex, obj):
         if hasattr(obj, 'numerical_approx'):
             if hasattr(obj, 'parent'):
+                #dont spoil integers
                 if obj.parent()==sg.IntegerRing():
                     return obj
+                #if a float is integer, transform it
+                if obj.is_integer():
+                    return sg.Integer(obj)
+                #if a float is too small, delete it
+                if abs(obj)<1e-12:
+                    print(f'symround: Deleted coefficient {obj}')
+                    return 0
+                
+                #simplify complex numbers
+                if obj not in RR:
+                    re = obj.real()
+                    im = obj.imag()
+                    if abs(re)<1e-10 and re!=0:
+                        print(f'symround: Deleted coefficient {re}')
+                        re = 0
+                    if abs(im)<1e-10 and im!=0:
+                        print(f'symround: Deleted coefficient {im}')
+                        im = 0
+                    #check if any of the im real parts is imaginary
+                    if re.is_integer() and im.is_integer():
+                        return sg.Integer(re) + sg.I * sg.Integer(im)
+                    if re.is_integer():
+                        return sg.Integer(re) + sg.I * im.numerical_approx(**self.kwds)
+                    if im.is_integer():
+                        return re.numerical_approx(**self.kwds) + sg.I * sg.Integer(im)           
+                
             return obj.numerical_approx(**self.kwds)
         else:
             return obj
