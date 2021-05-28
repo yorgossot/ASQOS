@@ -85,32 +85,21 @@ def elementwise(operator, M, N):
 def MMA_simplify( expr , full=False):
     '''
     Simplifies expression with the use of Mathematica and returns the result in SageMath.
-    Not to be used for matrices.
+    Can be used for both matrices and symbolic expressions.
     '''
     if full==True:
         expr_simpl_m  =  expr._mathematica_().FullSimplify()
     else:
         expr_simpl_m  =  expr._mathematica_().Simplify()
-    
-    expr_simpl_sg = expr_simpl_m._sage_()
 
+    expr_simpl_sg = expr_simpl_m._sage_()
+    
+    if  type(expr_simpl_sg) is list:
+        #the expression is a matrix. needs a modification
+        expr_simpl_sg = sg.matrix(expr_simpl_sg)
+    
     return expr_simpl_sg
 
-def MMA_simplify_matr( matr , full=False):
-    '''
-    Simplifies square matrix with the use of Mathematica and returns the result in SageMath.
-    '''
-    if full==True:
-        matr_simpl_m  =  matr._mathematica_().FullSimplify()
-    else:
-        matr_simpl_m  =  matr._mathematica_().Simplify()
-    
-    list_simpl_sg = matr_simpl_m._sage_()  #sagemath creates a list out of the matrix.
-
-
-    matr_simpl_sg = sg.matrix(list_simpl_sg)
-
-    return matr_simpl_sg
 
 
 def is_integer_num(n):
@@ -175,3 +164,11 @@ class symround(ExpressionTreeWalker):
             return obj.numerical_approx(**self.kwds)
         else:
             return obj
+
+
+def symround_matr(matr):
+    '''
+    Uses symround to apply it to matrices.
+    '''
+
+
