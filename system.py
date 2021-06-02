@@ -80,8 +80,8 @@ class system:
         self.construct_nj_hamiltonian_inverse()
         print('Constructing eff_hamiltonian and effective lindblau operators ...')   
         self.construct_eff_hamiltonian_lindblaus()
-        print('Constructing effective Lindblau master equation ...') 
-        self.solve_master_equation()
+        #print('Constructing effective Lindblau master equation ...') 
+        #self.solve_master_equation()
         
         t_end = time.time()
         print(f'\nSystem  {system_string}  initialized in {round(t_end-t_start , 1)} seconds.')
@@ -128,6 +128,22 @@ class system:
 
                 
     def construct_gs_e1_dec_subspace(self):
+        '''
+        Constructs: 
+
+        self.pos_to_del_gs_e1_dec  : positions from full Hamiltionian to delete to obtain the subspace gs_e1_dec
+        self.gs_e1_dec_excitations : the excitation for each of the dimensions
+        self.gs_e1_dec_states      : the statevector represented by a string for each of the dimensions
+        
+        WITHIN THE GS_E1_DEC subspace:
+            Ground state
+            self.pos_gs                : all positions that contain gs in gs_e1_dec
+            self.pos_to_del_gs         : positions from gs_e1_dec_Hamiltionian to delete to obtain the subspace gs
+            self.gs_excitations        : the excitation for each of the dimensions
+            self.gs_dec_states         : the statevector represented by a string for each of the dimensions
+
+            Similarly for e1 and dec...
+        '''
         
         self.pos_to_del_gs_e1_dec = []
         for (i , excitation ) in enumerate(self.excitations) :
@@ -148,7 +164,7 @@ class system:
             if e1_del_flag and gs_del_flag and dec_del_flag:
                 self.pos_to_del_gs_e1_dec.append(i)
         
-        #self.pos_gs_e1_dec = [i for i in [*range(self.dim)] if i not in self.pos_to_del_gs_e1_dec]   DELETED DUE TO IT BEING TOO SLOW
+        #self.pos_gs_e1_dec = [i for i in [*range(self.dim)] if i not in self.pos_to_del_gs_e1_dec]   #DELETED DUE TO IT BEING TOO SLOW
         self.gs_e1_dec_dim = self.dim - len(self.pos_to_del_gs_e1_dec)
         self.gs_e1_dec_excitations = np.delete(self.excitations , self.pos_to_del_gs_e1_dec)
         self.gs_e1_dec_states = np.delete(self.states , self.pos_to_del_gs_e1_dec)
@@ -384,8 +400,8 @@ class system:
             self.nj_hamiltonian_inv[i,i] = 0
 
         #simplify through mathematica if there is access to it
-        if self.MMA == True:
-            self.nj_hamiltonian_inv = MMA_simplify(self.nj_hamiltonian_inv)
+        #if self.MMA == True:
+        #    self.nj_hamiltonian_inv = MMA_simplify(self.nj_hamiltonian_inv)
 
 
 
@@ -410,7 +426,7 @@ class system:
                 nj_ham_inv = self.nj_hamiltonian_inv._mathematica_()
                 V_p = self.V_plus._mathematica_()
 
-                prod = (L_op * nj_ham_inv * V_p)._sage_()
+                prod = L_op.Dot( nj_ham_inv.Dot(V_p) )._sage_()
                 
                 L_eff = coeff * sg.matrix(prod)
             else:
