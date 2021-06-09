@@ -17,9 +17,9 @@ import system as ys
 
 
 
-system_string = 'x-o'
+system_string = '3'
 t0 = time.time()
-sys = ys.system(system_string)
+sys = ys.system(system_string , MMA=True)
 t1 = time.time()
 
 print((f'\n\nTook   {round(t1-t0)}  to initialize.\n\n'))

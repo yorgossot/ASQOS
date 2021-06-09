@@ -407,7 +407,7 @@ class system:
 
     def construct_eff_hamiltonian_lindblaus(self):
         '''
-        Consrtucts effective hamiltonian.
+        Consrtucts effective hamiltonian and eff_lindblau operators.
         '''
         self.eff_hamiltonian = sg.copy(self.gs_hamiltonian)
         self.eff_hamiltonian += -1/2*self.V_minus * ( self.nj_hamiltonian_inv +self.nj_hamiltonian_inv.conjugate_transpose() ) * self.V_plus
@@ -416,11 +416,14 @@ class system:
         self.eff_hamiltonian_gs = sg.copy(self.eff_hamiltonian )
         self.eff_hamiltonian_gs = self.eff_hamiltonian_gs[self.pos_gs,self.pos_gs]
         
+        self.lindblau_list = []
         self.eff_lindblau_list = []
         for (coeff , lindblau) in zip(self.L_coeffs ,self.Lindblau_list):
-            l_reduced = delete_from_csr( lindblau.data, row_indices=self.pos_to_del_gs_e1_dec, col_indices=self.pos_to_del_gs_e1_dec).toarray()      
+            l_reduced = delete_from_csr( lindblau.data, row_indices=self.pos_to_del_gs_e1_dec, col_indices=self.pos_to_del_gs_e1_dec).toarray()
+
+            self.lindblau_list.append(coeff * sg.matrix( l_reduced  ))  
             
-            if False == True:
+            if self.MMA == True:
                 # MMA mul does not work yet so this part is not run
                 L_op =  sg.matrix( l_reduced  )._mathematica_()
                 nj_ham_inv = self.nj_hamiltonian_inv._mathematica_()
@@ -435,11 +438,12 @@ class system:
             self.eff_lindblau_list.append( L_eff )
 
     
-    def solve_master_equation(self):
+    def solve_master_equation(self ):
         self.rho_matrix = sg.copy( self.eff_hamiltonian.parent().zero())
         t =sg.var('t')
         
         self.rhos = []
+        #creates rho matrix in the gs positions only
         for (i,ii) in enumerate(self.pos_gs):
             for (j,jj) in enumerate(self.pos_gs):
                 self.rhos.append( sg.function( f'rho_{i}{j}' , latex_name = f'\\rho_{{ {i}{j} }}'  )(t) )
@@ -455,6 +459,48 @@ class system:
             ldl_eff = l_eff.conjugate_transpose() * l_eff
             self.rho_matrix += -1/2 * ( ldl_eff * self.rho_matrix + self.rho_matrix * ldl_eff )
         
+        #projects everything on gs subspace
+        self.rho_matrix_rh = self.rho_matrix[self.pos_gs,self.pos_gs]
+
+        self.rho_matrix_lh = sg.copy( self.rho_matrix_rh.parent().zero())
+        ind = 0
+        for i in range(self.gs_dim):
+            for j in range(self.gs_dim):
+                self.rho_matrix_lh[i,j] = sg.diff( self.rhos[ind] ,t)
+                ind +=1
+
+        '''
+        Solution omitted until  the coefficient mess is fixed.
+        
+        #self.SDEs = self.rho_matrix_lh == self.rho_matrix_rh
+
+        #self.density_matrix_t = sg.desolve_system( self.SDE , self.rhos )
+        '''
+
+
+
+    def solve_tayl_master_equation(self, eff_hamiltonian_tayl, eff_lind_list_tayl ):
+        self.rho_matrix = sg.copy( self.eff_hamiltonian.parent().zero())
+        t =sg.var('t')
+        
+        #creates rho matrix in the gs positions only
+        self.rhos = []
+        for (i,ii) in enumerate(self.pos_gs):
+            for (j,jj) in enumerate(self.pos_gs):
+                self.rhos.append( sg.function( f'rho_{i}{j}' , latex_name = f'\\rho_{{ {i}{j} }}'  )(t) )
+                self.rho_matrix[ii,jj] = self.rhos[-1]
+
+        #adds commutator
+        self.rho_matrix += -sg.I * (eff_hamiltonian_tayl *self.rho_matrix - self.rho_matrix * eff_hamiltonian_tayl )
+
+        #adds sum of lind
+        for l_eff in eff_lind_list_tayl:
+            self.rho_matrix += l_eff* self.rho_matrix * l_eff.conjugate_transpose()
+            
+            ldl_eff = l_eff.conjugate_transpose() * l_eff
+            self.rho_matrix += -1/2 * ( ldl_eff * self.rho_matrix + self.rho_matrix * ldl_eff )
+        
+        #projects everything on gs subspace
         self.rho_matrix_rh = self.rho_matrix[self.pos_gs,self.pos_gs]
 
         self.rho_matrix_lh = sg.copy( self.rho_matrix_rh.parent().zero())

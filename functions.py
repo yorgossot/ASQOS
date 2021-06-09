@@ -186,25 +186,3 @@ def symround(expr,digits=1):
     else:
         return symround_class(digits=digits)(expr)
 
-
-
-
-
-class fraction_multiplication_class(ExpressionTreeWalker):
-    def __init__(self, factor):
-        """
-        A class that walks the tree of a FRACTION and finds with what to multiply every coefficient
-        """
-        self.factor = factor
-
-    def pyobject(self, ex, obj):
-        if hasattr(obj, 'numerical_approx'):
-            if hasattr(obj, 'parent'):  
-                return obj*self.factor 
-        return obj  
-                
-
-
-
-def frac_coeff_simplify(expr,factor):
-    multiplication_const = fraction_multiplication_class()
