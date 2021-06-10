@@ -51,7 +51,7 @@ class element:
             self.sub_elements.append( ququad(atom_dim_pos[2] , cavity_dim_pos ) )
         elif type == '3':
             #borregaard 2015 with 1+3 atoms
-            self.size = 4
+            self.size = 5
             self.dim = 2 *3 * 4 * 4 * 4
             self.dim_list = [2 , 3 , 4 , 4 , 4] 
             cavity_dim_pos = dim_pos
@@ -61,6 +61,48 @@ class element:
             self.sub_elements.append( ququad(atom_dim_pos[1] , cavity_dim_pos ) )
             self.sub_elements.append( ququad(atom_dim_pos[2] , cavity_dim_pos ) )
             self.sub_elements.append( ququad(atom_dim_pos[3] , cavity_dim_pos ) )
+        elif type == 'T':
+            #T symmetric shaped configuration
+            self.size = 7
+            self.dim = 2*3 * 2*4*2  * 2*4*2 * 2*4*2
+            self.dim_list = [2,3 , 2,4,2  , 2,4,2 , 2,4,2]
+            aux_cavity_dim_pos = dim_pos
+            aux_atom_dim_pos = dim_pos+1
+            self.sub_elements.append( cavity(aux_cavity_dim_pos) ) 
+            self.sub_elements.append( qutrit(aux_atom_dim_pos, aux_cavity_dim_pos ) )
+            for i in range(3):
+                o_cavity_dim_pos = 3*i + 2
+                o_atom_dim_pos   = 3*i + 3
+                fiber_dim_pos    = 3*i + 4
+                fiber_connected_cavities = [o_cavity_dim_pos , aux_cavity_dim_pos]
+                self.sub_elements.append( cavity(o_cavity_dim_pos) ) 
+                self.sub_elements.append( ququad(o_atom_dim_pos , o_cavity_dim_pos ) )
+                self.sub_elements.append( fiber( fiber_dim_pos, fiber_connected_cavities ))
+        elif type == 't':
+            #t semi symmetric shaped configuration
+            self.size = 7
+            self.dim = 2*3 * 2*4*2  * 2*4*2 * 2*4*2
+            self.dim_list = [2,3 , 2,4,2  , 2,4,2 , 2,4,2]
+            aux_cavity_dim_pos = dim_pos
+            aux_atom_dim_pos = dim_pos+1
+            self.sub_elements.append( cavity(aux_cavity_dim_pos) ) 
+            self.sub_elements.append( qutrit(aux_atom_dim_pos, aux_cavity_dim_pos ) )
+            
+            ox_cavity_dim_pos =  2
+            o_atom_dim_pos   =  3
+            fiber_dim_pos    =  4
+            fiber_connected_cavities = [ox_cavity_dim_pos , aux_cavity_dim_pos]
+            self.sub_elements.append( cavity(ox_cavity_dim_pos) ) 
+            self.sub_elements.append( ququad(o_atom_dim_pos , ox_cavity_dim_pos ) )
+            self.sub_elements.append( fiber( fiber_dim_pos, fiber_connected_cavities ))
+            for i in range(2):
+                o_cavity_dim_pos = 3*i + 5
+                o_atom_dim_pos   = 3*i + 6
+                fiber_dim_pos    = 3*i + 7
+                fiber_connected_cavities = [o_cavity_dim_pos , ox_cavity_dim_pos]
+                self.sub_elements.append( cavity(o_cavity_dim_pos) ) 
+                self.sub_elements.append( ququad(o_atom_dim_pos , o_cavity_dim_pos ) )
+                self.sub_elements.append( fiber( fiber_dim_pos, fiber_connected_cavities ))
         else:            
-            print(f'Not valid element {type}. Give o , x and -')
+            print(f'Not valid element {type}. Give o , x, - or other valid configuration')
             exit()
