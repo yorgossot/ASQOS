@@ -5,6 +5,23 @@ from scipy.sparse import csr_matrix
 import sage.all as sg
 from sage.symbolic.expression_conversions import ExpressionTreeWalker # for the simplif funct
 import math as math
+import pickle
+
+
+def save_object(obj, filename):
+    '''
+    Saves object.
+    https://stackoverflow.com/a/4529901
+    '''
+    with open(f'saved_objects/{filename}.pkl', 'wb') as output:  # Overwrites any existing file.
+        pickle.dump(obj, output, pickle.HIGHEST_PROTOCOL)
+def load_object(filename):
+    '''
+    Load object.
+    https://stackoverflow.com/a/4529901
+    '''
+    with open(f'saved_objects/{filename}.pkl', 'rb') as input:
+        return pickle.load(input)
 
 def zero_operator(dim_list):
     '''
