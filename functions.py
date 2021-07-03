@@ -160,17 +160,17 @@ class symround_class(ExpressionTreeWalker):
                     if obj.is_integer():
                         return sg.Integer(obj)
                     #if a float is too small, delete it
-                    if abs(obj)<1e-12:
+                    if abs(obj)<1e-14:
                         print(f'symround: Deleted coefficient {obj}')
                         return 0                
                 else:
                     #simplify complex numbers
                     re = obj.real().numerical_approx(**self.kwds)
                     im = obj.imag().numerical_approx(**self.kwds)
-                    if abs(re)<1e-10 and re!=0:
+                    if abs(re)<1e-14 and re!=0:
                         print(f'symround: Deleted coefficient {re}')
                         re = 0
-                    if abs(im)<1e-10 and im!=0:
+                    if abs(im)<1e-14 and im!=0:
                         print(f'symround: Deleted coefficient {im}')
                         im = 0
                     #check if any of the im real parts is imaginary

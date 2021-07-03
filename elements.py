@@ -61,6 +61,16 @@ class element:
             self.sub_elements.append( ququad(atom_dim_pos[1] , cavity_dim_pos ) )
             self.sub_elements.append( ququad(atom_dim_pos[2] , cavity_dim_pos ) )
             self.sub_elements.append( ququad(atom_dim_pos[3] , cavity_dim_pos ) )
+        elif type == '1':
+            #borregaard 2015 with 1+1 atoms
+            self.size = 3
+            self.dim = 2 *3 * 4 
+            self.dim_list = [2 , 3  , 4] 
+            cavity_dim_pos = dim_pos
+            atom_dim_pos = [cavity_dim_pos + 1   , cavity_dim_pos + 2 ]
+            self.sub_elements.append( cavity(cavity_dim_pos ))
+            self.sub_elements.append( qutrit(atom_dim_pos[0], cavity_dim_pos ) )
+            self.sub_elements.append( ququad(atom_dim_pos[1] , cavity_dim_pos ) )
         elif type == 'T':
             #T symmetric shaped configuration
             self.size = 7
