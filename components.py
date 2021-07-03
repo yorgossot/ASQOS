@@ -34,6 +34,8 @@ class cavity:
 
         self.L_coeffs = [sg.sqrt( sg.var("kappa_c", domain='positive' ,  latex_name =r'\kappa_c')) ]
 
+    def update_index(self, variable_index):
+        return variable_index
 
     def hamiltonian(self): 
         H = []
@@ -47,6 +49,8 @@ class cavity:
         l1 = [ qt.tensor(tensor_list) ]
 
         return l1 
+    
+
 
 
 class fiber:
@@ -79,6 +83,8 @@ class fiber:
 
         self.L_coeffs = [sg.sqrt( sg.var("kappa_b", domain='positive' ,  latex_name =r'\kappa_b')) ]
 
+    def update_index(self, variable_index):
+        return variable_index
 
     def hamiltonian(self): #return 0 operator
         H = zero_operator(self.system_dim_list)
@@ -147,6 +153,10 @@ class ququad:
 
         self.L_coeffs = [sg.sqrt( sg.var("gamma", domain='positive' ,  latex_name =r'\gamma')) ]
 
+    def update_index(self, variable_index):
+        self.H_coeffs = [sg.var(f'D{variable_index}', domain='real' ,  latex_name =fr'{{\Delta }}_{{{variable_index}}}') , sg.var("g", domain='real')]
+        return variable_index + 1
+    
     def hamiltonian(self):
         H = []
         
@@ -209,6 +219,8 @@ class qutrit:
 
         self.L_coeffs = [sg.sqrt( sg.var("gamma_g", domain='positive' ,  latex_name =r'\gamma_g')) , sg.sqrt( sg.var("gamma_f", domain='positive' ,  latex_name =r'\gamma_f'))]
 
+    def update_index(self, variable_index):
+        return variable_index
 
     def hamiltonian(self):
         

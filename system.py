@@ -48,15 +48,17 @@ class system:
     hamiltonian
     '''
  
-    def __init__(self, system_string , MMA = True):
+    def __init__(self, system_string , MMA = True , ManyVariables = False):
+        self.ManyVariables = ManyVariables
         self.MMA = MMA
+        
         self.size = len(system_string)
         self.elements = []
         self.dim_list =[]
         self.dim = 1  
         dim_pos = 0
         for ( pos , el_type ) in enumerate(system_string):
-            self.elements.append( element( pos, el_type, dim_pos ) )
+            self.elements.append( element( pos, el_type, dim_pos   ) )
             dim_pos +=  self.elements[-1].size
             self.dim *=  self.elements[-1].dim
             self.dim_list.append(self.elements[-1].dim_list)
@@ -89,7 +91,7 @@ class system:
 
     def update_subelements(self):
         '''
-        Communicate the dimension_list to all (sub)elements
+        Communicate the dimension_list to all (sub)elements and potentially implement many variables.
         '''
         flatten = lambda t: [item for sublist in t for item in sublist] #expression that flattens list
         flattened_list = flatten(self.dim_list)
@@ -98,7 +100,12 @@ class system:
             elem.system_dim_list = flattened_list
             for sub_elem in elem.sub_elements:
                 sub_elem.system_dim_list = flattened_list
-
+        
+        if self.ManyVariables == True:
+            variable_index = 1
+            for elem in self.elements:
+                for sub_elem in elem.sub_elements:
+                    variable_index = sub_elem.update_index(variable_index)
 
 
     def construct_states_and_excitations(self):
