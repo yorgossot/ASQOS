@@ -101,11 +101,12 @@ class system:
             for sub_elem in elem.sub_elements:
                 sub_elem.system_dim_list = flattened_list
         
+        self.variable_index = 0
         if self.ManyVariables == True:
-            variable_index = 1
+            self.variable_index = 1
             for elem in self.elements:
                 for sub_elem in elem.sub_elements:
-                    variable_index = sub_elem.update_index(variable_index)
+                    self.variable_index = sub_elem.update_index(self.variable_index)
 
 
     def construct_states_and_excitations(self):
