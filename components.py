@@ -154,7 +154,7 @@ class ququad:
         self.L_coeffs = [sg.sqrt( sg.var("gamma", domain='positive' ,  latex_name =r'\gamma')) ]
 
     def update_index(self, variable_index):
-        self.H_coeffs = [sg.var(f'D{variable_index}', domain='real' ,  latex_name =fr'{{\Delta }}_{{{variable_index}}}') , sg.var("g", domain='real')]
+        self.H_coeffs = [sg.var(f'De{variable_index}', domain='real' ,  latex_name =fr'{{\Delta e}}_{{{variable_index}}}') , sg.var("g", domain='real')]
         return variable_index + 1
     
     def hamiltonian(self):
