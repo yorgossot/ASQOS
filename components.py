@@ -78,7 +78,7 @@ class fiber:
         self.excitations = np.array(['g','e'])
         self.states = np.array(['0','1']) 
         
-        self.H_coeffs = [sg.var("v", domain='real' ,  latex_name =r'\nu'), sg.var("v")*sg.exp(sg.I*sg.var('phi', domain='real',  latex_name =r'\phi'))]
+        self.H_coeffs = [sg.var("v", domain='positive' ,  latex_name =r'\nu'), sg.var("v")*sg.exp(sg.I*sg.var('phi', domain='positive',  latex_name =r'\phi'))]
         self.gs_e1_interaction = [False,  False]
 
         self.L_coeffs = [sg.sqrt( sg.var("kappa_b", domain='positive' ,  latex_name =r'\kappa_b')) ]
@@ -148,13 +148,13 @@ class ququad:
         self.excitations = np.array(['g', 'g', 'e' , 'd'])
         self.states = np.array(['0','1' , 'e' , 'o']) 
         
-        self.H_coeffs = [sg.var("De", domain='real' ,  latex_name =r'\Delta e') , sg.var("g", domain='real')]
+        self.H_coeffs = [sg.var("De", domain='positive' ,  latex_name =r'\Delta e') , sg.var("g", domain='positive')]
         self.gs_e1_interaction = [False , False]
 
         self.L_coeffs = [sg.sqrt( sg.var("gamma", domain='positive' ,  latex_name =r'\gamma')) ]
 
     def update_index(self, variable_index):
-        self.H_coeffs = [sg.var(f'De{variable_index}', domain='real' ,  latex_name =fr'{{\Delta e}}_{{{variable_index}}}') , sg.var("g", domain='real')]
+        self.H_coeffs = [sg.var(f'De{variable_index}', domain='positive' ,  latex_name =fr'{{\Delta e}}_{{{variable_index}}}') , sg.var("g", domain='positive')]
         return variable_index + 1
     
     def hamiltonian(self):
@@ -214,7 +214,7 @@ class qutrit:
         self.states = np.array(['g','f' , 'E']) 
         self.laser_bool = True    
         
-        self.H_coeffs = [sg.var("DE", domain='real' ,  latex_name =r'\Delta E') , sg.var("Omega", domain='real' , latex_name =r'\Omega') , sg.var("g_f", domain='real', latex_name =r'g_f')]
+        self.H_coeffs = [sg.var("DE", domain='positive' ,  latex_name =r'\Delta E') , sg.var("Omega", domain='positive' , latex_name =r'\Omega') , sg.var("g_f", domain='positive', latex_name =r'g_f')]
         self.gs_e1_interaction = [False,  self.laser_bool  , False]     
 
         self.L_coeffs = [sg.sqrt( sg.var("gamma_g", domain='positive' ,  latex_name =r'\gamma_g')) , sg.sqrt( sg.var("gamma_f", domain='positive' ,  latex_name =r'\gamma_f'))]
