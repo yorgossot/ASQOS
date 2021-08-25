@@ -5,7 +5,10 @@ from scipy.sparse import csr_matrix
 import sage.all as sg
 from sage.symbolic.expression_conversions import ExpressionTreeWalker # for the simplif funct
 import math as math
-import pickle
+try:
+    import _pickle as pickle
+except:
+    import pickle
 
 
 def save_object(obj, filename):

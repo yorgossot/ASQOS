@@ -27,6 +27,15 @@ class system:
     
     Corresponding state-vectors and corresponding excitations will be initialized.
 
+    Extras:
+
+    MMA = True  : bool
+        Use of Mathematica to speed up 
+    ManyVariables = False : bool
+        Different cavities have different detunings 
+    TwoPhotonResonance = True: bool
+        Cavities are on two photon resonance
+
     ...
 
     Attributes
@@ -48,7 +57,8 @@ class system:
     hamiltonian
     '''
  
-    def __init__(self, system_string , MMA = True , ManyVariables = False):
+    def __init__(self, system_string , MMA = True , ManyVariables = False , TwoPhotonResonance = True):
+        self.TwoPhotonResonance = TwoPhotonResonance
         self.ManyVariables = ManyVariables
         self.MMA = MMA
         
@@ -101,12 +111,20 @@ class system:
             for sub_elem in elem.sub_elements:
                 sub_elem.system_dim_list = flattened_list
         
+        #ManyVariables implementation
         self.variable_index = 0
         if self.ManyVariables == True:
             self.variable_index = 1
             for elem in self.elements:
                 for sub_elem in elem.sub_elements:
                     self.variable_index = sub_elem.update_index(self.variable_index)
+
+        #TwoPhotonResonance implementation
+        
+        if self.TwoPhotonResonance == False:
+            for elem in self.elements:
+                for sub_elem in elem.sub_elements:
+                    sub_elem.TwoPhotonResonance = False
 
 
     def construct_states_and_excitations(self):

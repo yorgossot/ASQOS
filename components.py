@@ -31,14 +31,25 @@ class cavity:
         
         self.H_coeffs = [] 
         self.gs_e1_interaction = [] 
+        self.TwoPhotonResonance = True
 
         self.L_coeffs = [sg.sqrt( sg.var("kappa_c", domain='positive' ,  latex_name =r'\kappa_c')) ]
 
     def update_index(self, variable_index):
         return variable_index
 
+    
+
     def hamiltonian(self): 
         H = []
+        if self.TwoPhotonResonance == False:
+            self.H_coeffs = [sg.var("dc", domain='positive' ,  latex_name =fr'{{\delta }}_{{c}}')]
+            self.gs_e1_interaction = [False]
+            
+            tensor_list = id_operator_list(self.system_dim_list)
+            e_state_vector = qt.basis(self.dim,1)
+            tensor_list[self.dim_pos] = e_state_vector.proj()
+            H.append(qt.tensor(tensor_list))
 
         return H 
 
@@ -80,6 +91,7 @@ class fiber:
         
         self.H_coeffs = [sg.var("v", domain='positive' ,  latex_name =r'\nu'), sg.var("v")*sg.exp(sg.I*sg.var('phi', domain='positive',  latex_name =r'\phi'))]
         self.gs_e1_interaction = [False,  False]
+        self.TwoPhotonResonance = True
 
         self.L_coeffs = [sg.sqrt( sg.var("kappa_b", domain='positive' ,  latex_name =r'\kappa_b')) ]
 
@@ -150,6 +162,7 @@ class ququad:
         
         self.H_coeffs = [sg.var("De", domain='positive' ,  latex_name =r'\Delta e') , sg.var("g", domain='positive')]
         self.gs_e1_interaction = [False , False]
+        self.TwoPhotonResonance = True
 
         self.L_coeffs = [sg.sqrt( sg.var("gamma", domain='positive' ,  latex_name =r'\gamma')) ]
 
@@ -216,6 +229,7 @@ class qutrit:
         
         self.H_coeffs = [sg.var("DE", domain='positive' ,  latex_name =r'\Delta E') , sg.var("Omega", domain='positive' , latex_name =r'\Omega') , sg.var("g_f", domain='positive', latex_name =r'g_f')]
         self.gs_e1_interaction = [False,  self.laser_bool  , False]     
+        self.TwoPhotonResonance = True
 
         self.L_coeffs = [sg.sqrt( sg.var("gamma_g", domain='positive' ,  latex_name =r'\gamma_g')) , sg.sqrt( sg.var("gamma_f", domain='positive' ,  latex_name =r'\gamma_f'))]
 
