@@ -1,3 +1,4 @@
+from numpy.core.fromnumeric import prod
 import qutip as qt
 import numpy as np
 import matplotlib.pyplot as plt
@@ -132,25 +133,29 @@ class system:
         Creates the 'str' vectors self.excitations  and  self.states.
         Each entry will ch
         '''
-        self.excitations = np.empty(self.dim, dtype= f'U{len(self.flattened_dim_list)}')
-        self.states = np.empty(self.dim, dtype= f'U{len(self.flattened_dim_list) * 4 }')
+        self.excitations = ['']*self.dim
+        self.states = ['']*self.dim
 
         #This code does "tensor product" for characters
-        times_to_be_tensored = 1
-        sub_elem_dim_prod = 1
+        excitations_list = []
+        states_list = []
         for elem in self.elements:
             for sub_elem in elem.sub_elements:
-                sub_elem_dim_prod *= sub_elem.dim
-                for  t in range( times_to_be_tensored):
-                    subblock_start = int(t/times_to_be_tensored*self.dim)
-                    for i in range(sub_elem.dim):
-                        slice_start = int( (i*self.dim / sub_elem_dim_prod ) + subblock_start  )
-                        slice_end = int(( (i+1) *self.dim/sub_elem_dim_prod ) + subblock_start )
-                        for j in range(slice_start,slice_end):
-                            self.excitations[j] += sub_elem.excitations[i]
-                            self.states[j] += sub_elem.states[i]
-                times_to_be_tensored *= sub_elem.dim         
+                excitations_list.append(sub_elem.excitations)
+                states_list.append(sub_elem.states)
 
+        for (i,dim) in enumerate(self.flattened_dim_list):
+            excitations = excitations_list[i]
+            states = states_list[i]
+            above_dims = np.prod(self.flattened_dim_list[:i+1]) 
+            consecutive_elems = self.dim // above_dims  
+            k = 0
+            while k<self.dim:
+                for d in range(dim):
+                    for c in range(consecutive_elems):
+                        self.excitations[k] += excitations[d] 
+                        self.states[k] += states[d] 
+                        k = k + 1
 
                 
     def construct_gs_e1_dec_subspace(self):
@@ -179,7 +184,7 @@ class system:
             e_count = letter_count['e'] #e/E states
             p_count = letter_count['p'] #f states
             d_count = letter_count['d'] #o states
-          
+
             gs_del_flag = False
             if e_count!=0 or p_count!=0 or d_count!=0: gs_del_flag = True  #no excitation/no f state/no decay/
             e1_del_flag = False

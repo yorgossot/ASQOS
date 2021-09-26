@@ -289,3 +289,106 @@ class qutrit:
 
         return [l1 , l2]
 
+
+
+
+class qupent:
+    '''
+    Atom with 5 levels.
+
+    index | state |  excitation 
+       0  |   0   |      g
+       1  |   1   |      g
+       e  |   2   |      e
+       o  |   3   |      d
+       X  |   4   |      e   (excited coupled to 0 state)
+    ...
+
+    Attributes
+    ----------
+
+    Methods
+    -------
+   
+    '''
+    def __init__(self,dim_pos,cavity_dim_pos):
+        self.dim = 5
+        self.dim_pos = dim_pos
+        self.system_dim_list =[]
+        self.cavity_dim_pos = cavity_dim_pos
+        self.excitations = np.array(['g', 'g', 'e' , 'd','e'])
+        self.states = np.array(['0','1' , 'e' , 'o', '2']) 
+        
+        self.H_coeffs = [sg.var("De", domain='positive' ,  latex_name =r'\Delta e') ,sg.var("De0", domain='positive' ,  latex_name =r'\Delta e_0'), \
+             sg.var("g", domain='positive') , sg.var("g0", domain='positive',  latex_name =r'g_0') ]
+        self.gs_e1_interaction = [False , False , False , False]
+        self.TwoPhotonResonance = True
+
+        self.L_coeffs = [sg.sqrt( sg.var("gamma", domain='positive' ,  latex_name =r'\gamma')) ,sg.sqrt( sg.var("gamma0", domain='positive' ,  latex_name =r'\gamma_0')) ]
+
+    def update_index(self, variable_index):
+        self.H_coeffs = [sg.var(f'De{variable_index}', domain='positive' ,  latex_name =fr'{{\Delta e}}_{{{variable_index}}}') , sg.var("g", domain='positive')]
+        return variable_index + 1
+    
+    def hamiltonian(self):
+        H = []
+        
+        #e detuning
+        tensor_list = id_operator_list(self.system_dim_list)
+        e_state_vector = qt.basis(self.dim,2)
+        tensor_list[self.dim_pos] = e_state_vector.proj()
+        H.append(qt.tensor(tensor_list))
+
+        #X detuning
+        tensor_list = id_operator_list(self.system_dim_list)
+        X_state_vector = qt.basis(self.dim,4)
+        tensor_list[self.dim_pos] = X_state_vector.proj()
+        H.append(qt.tensor(tensor_list))
+
+        #atom cavity interaction with state 1
+        e_ket = qt.basis(self.dim,2)
+        f_ket = qt.basis(self.dim,1)
+        ef_ketbra = e_ket * f_ket.dag()
+        
+        cavity_dim = self.system_dim_list[self.cavity_dim_pos]
+        
+        tensor_list = id_operator_list(self.system_dim_list)
+        tensor_list[self.cavity_dim_pos] = qt.destroy(cavity_dim)
+        tensor_list[self.dim_pos] = ef_ketbra
+
+        H.append(qt.tensor(tensor_list) )
+
+        #atom cavity interaction with state 0
+        X_ket = qt.basis(self.dim,4)
+        f0_ket = qt.basis(self.dim,0)
+        Xf0_ketbra = X_ket * f0_ket.dag()
+        
+        cavity_dim = self.system_dim_list[self.cavity_dim_pos]
+        
+        tensor_list = id_operator_list(self.system_dim_list)
+        tensor_list[self.cavity_dim_pos] = qt.destroy(cavity_dim)
+        tensor_list[self.dim_pos] = Xf0_ketbra
+
+        H.append(qt.tensor(tensor_list) )
+        return H
+
+    def lindblau(self):
+        l1 = []
+
+        e_ket = qt.basis(self.dim,2)
+        o_ket = qt.basis(self.dim,3)
+
+        tensor_list = id_operator_list(self.system_dim_list)
+        tensor_list[self.dim_pos] = o_ket*e_ket.dag()
+
+        l1.append(qt.tensor(tensor_list))
+
+        X_ket = qt.basis(self.dim,4)
+        o_ket = qt.basis(self.dim,3)
+
+        tensor_list = id_operator_list(self.system_dim_list)
+        tensor_list[self.dim_pos] = o_ket*X_ket.dag()
+
+        l1.append(qt.tensor(tensor_list))
+
+        return l1 
