@@ -231,7 +231,7 @@ class qutrit:
         self.gs_e1_interaction = [False,  self.laser_bool  , False]     
         self.TwoPhotonResonance = True
 
-        self.L_coeffs = [sg.sqrt( sg.var("gamma_g", domain='positive' ,  latex_name =r'\gamma_g')) , sg.sqrt( sg.var("gamma_f", domain='positive' ,  latex_name =r'\gamma_f'))]
+        self.L_coeffs = [ sg.sqrt( sg.var("gamma_f", domain='positive' ,  latex_name =r'\gamma_f')), sg.sqrt( sg.var("gamma_g", domain='positive' ,  latex_name =r'\gamma_g')) ]
 
     def update_index(self, variable_index):
         return variable_index
