@@ -53,7 +53,7 @@ class cavity:
 
         return H 
 
-    def lindblau(self):
+    def lindblad(self):
         tensor_list = id_operator_list(self.system_dim_list)
         tensor_list[self.dim_pos] = qt.destroy(self.dim)
 
@@ -122,7 +122,7 @@ class fiber:
         return H 
 
 
-    def lindblau(self):
+    def lindblad(self):
         tensor_list = id_operator_list(self.system_dim_list)
         tensor_list[self.dim_pos] = qt.destroy(self.dim)
 
@@ -195,7 +195,7 @@ class ququad:
         return H
 
 
-    def lindblau(self):
+    def lindblad(self):
         e_ket = qt.basis(self.dim,2)
         o_ket = qt.basis(self.dim,3)
 
@@ -271,7 +271,7 @@ class qutrit:
 
         return [H1 , H2 , H3]
 
-    def lindblau(self):
+    def lindblad(self):
         E_ket = qt.basis(self.dim,2)
         g_ket = qt.basis(self.dim,0)
         f_ket = qt.basis(self.dim,1)
@@ -372,7 +372,7 @@ class qupent:
         H.append(qt.tensor(tensor_list) )
         return H
 
-    def lindblau(self):
+    def lindblad(self):
         l1 = []
 
         e_ket = qt.basis(self.dim,2)

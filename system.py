@@ -91,9 +91,9 @@ class system:
         self.construct_nj_hamiltonian()
         print('Inverting NJ_hamiltonian  ...')        
         self.construct_nj_hamiltonian_inverse()
-        print('Constructing eff_hamiltonian and effective lindblau operators ...')   
-        self.construct_eff_hamiltonian_lindblaus()
-        #print('Constructing effective Lindblau master equation ...') 
+        print('Constructing eff_hamiltonian and effective lindblad operators ...')   
+        self.construct_eff_hamiltonian_lindblads()
+        #print('Constructing effective Lindblad master equation ...') 
         #self.solve_master_equation()
         
         t_end = time.time()
@@ -280,13 +280,13 @@ class system:
 
     def obtain_energy_info(self):
         '''
-        Fetches Hamiltonians and Lindblau operators from components.
+        Fetches Hamiltonians and Lindblad operators from components.
         '''
         self.H_list = []
         self.H_coeffs = []
         self.gs_e1_dec_int =[]
         
-        self.Lindblau_list = []
+        self.Lindblad_list = []
         self.L_coeffs = []
         
         for elem in self.elements:
@@ -299,9 +299,9 @@ class system:
                     self.gs_e1_dec_int.append(sub_elem.gs_e1_interaction[i])
 
 
-                lind = sub_elem.lindblau() 
+                lind = sub_elem.lindblad() 
                 for (i,l_el) in enumerate(lind):
-                    self.Lindblau_list.append(lind[i])
+                    self.Lindblad_list.append(lind[i])
                     self.L_coeffs.append(sub_elem.L_coeffs[i])
 
 
@@ -391,8 +391,8 @@ class system:
 
         self.L_sum =  sg.copy(self.V_plus.parent().zero())
 
-        for (coeff , lindblau) in zip(self.L_coeffs ,self.Lindblau_list):
-            l_reduced = delete_from_csr( lindblau.data, row_indices=self.pos_to_del_gs_e1_dec, col_indices=self.pos_to_del_gs_e1_dec).toarray()      
+        for (coeff , lindblad) in zip(self.L_coeffs ,self.Lindblad_list):
+            l_reduced = delete_from_csr( lindblad.data, row_indices=self.pos_to_del_gs_e1_dec, col_indices=self.pos_to_del_gs_e1_dec).toarray()      
             L = coeff * self.gs_e1_dec_matrix_space(l_reduced)
             self.L_sum +=  L.conjugate_transpose() * L 
         
@@ -436,9 +436,9 @@ class system:
 
 
 
-    def construct_eff_hamiltonian_lindblaus(self):
+    def construct_eff_hamiltonian_lindblads(self):
         '''
-        Consrtucts effective hamiltonian and eff_lindblau operators.
+        Consrtucts effective hamiltonian and eff_lindblad operators.
         '''
         self.eff_hamiltonian = sg.copy(self.gs_hamiltonian)
         self.eff_hamiltonian += -1/2*self.V_minus * ( self.nj_hamiltonian_inv +self.nj_hamiltonian_inv.conjugate_transpose() ) * self.V_plus
@@ -447,12 +447,12 @@ class system:
         self.eff_hamiltonian_gs = sg.copy(self.eff_hamiltonian )
         self.eff_hamiltonian_gs = self.eff_hamiltonian_gs[self.pos_gs,self.pos_gs]
         
-        self.lindblau_list = []
-        self.eff_lindblau_list = []
-        for (coeff , lindblau) in zip(self.L_coeffs ,self.Lindblau_list):
-            l_reduced = delete_from_csr( lindblau.data, row_indices=self.pos_to_del_gs_e1_dec, col_indices=self.pos_to_del_gs_e1_dec).toarray()
+        self.lindblad_list = []
+        self.eff_lindblad_list = []
+        for (coeff , lindblad) in zip(self.L_coeffs ,self.Lindblad_list):
+            l_reduced = delete_from_csr( lindblad.data, row_indices=self.pos_to_del_gs_e1_dec, col_indices=self.pos_to_del_gs_e1_dec).toarray()
 
-            self.lindblau_list.append(coeff * sg.matrix( l_reduced  ))  
+            self.lindblad_list.append(coeff * sg.matrix( l_reduced  ))  
             
             if self.MMA == True:
                 # MMA mul does not work yet so this part is not run
@@ -466,7 +466,7 @@ class system:
             else:
                 L_eff = coeff * sg.matrix( l_reduced  ) * self.nj_hamiltonian_inv * self.V_plus
             
-            self.eff_lindblau_list.append( L_eff )
+            self.eff_lindblad_list.append( L_eff )
 
     
     def solve_master_equation(self ):
@@ -484,7 +484,7 @@ class system:
         self.rho_matrix += -sg.I * (self.eff_hamiltonian *self.rho_matrix - self.rho_matrix * self.eff_hamiltonian )
 
         #adds sum of lind
-        for l_eff in self.eff_lindblau_list:
+        for l_eff in self.eff_lindblad_list:
             self.rho_matrix += l_eff* self.rho_matrix * l_eff.conjugate_transpose()
             
             ldl_eff = l_eff.conjugate_transpose() * l_eff
