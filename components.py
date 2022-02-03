@@ -1,9 +1,56 @@
+#
+# File containing all fundamental components of the system and element class.
+#
+
 import qutip as qt
 import numpy as np
 import matplotlib.pyplot as plt
 import sage.all as sg
 from functions import *
 
+# example of component class
+'''
+class component_name:  
+    def __init__(self , dim_pos  ):
+        self.dim : dimension of subspace describing the component
+        self.dim_pos : position of the dimensions in the whole system
+        self.system_dim_list : list of dimensions in the whole system. It is set from the system class.
+        self.excitations : numpy array with characters corresponding to the excitations of each level of the system 
+            'g' -> ground state
+            'e' -> 1st excited state
+            'd' -> decayed state
+            'q' -> ground state of auxiliary atom g
+            'p' -> meta stable state of auxialiary atom f
+        
+        self.states : numpy array with characters corresponding to the name of each level of the system 
+        
+        # Let there be n Hamiltonian interactions
+        self.H_coeffs : list of n coefficients of the Hamiltonian interactions (sagemath variables)
+        self.gs_e1_interaction : list of n booleans denoting whether it is an excitation interaction
+        self.TwoPhotonResonance = True
+
+        # Let there be m loss operators
+        self.L_coeffs :  list of m coefficients of the Lindblad operators (sagemath variables)
+
+    def update_index(self, variable_index):
+        return variable_index
+
+    def hamiltonian(self): 
+        H = []
+        if self.TwoPhotonResonance == False:
+            self.H_coeffs = [sg.var("dc", domain='positive' ,  latex_name =fr'{{\delta }}_{{c}}')]
+            self.gs_e1_interaction = [False]
+            
+            tensor_list = id_operator_list(self.system_dim_list)
+            e_state_vector = qt.basis(self.dim,1)
+            tensor_list[self.dim_pos] = e_state_vector.proj()
+            H.append(qt.tensor(tensor_list))
+
+        return H 
+
+    def lindblad(self):
+        return l1 
+'''
 
 class cavity:
     '''
@@ -292,7 +339,7 @@ class qutrit:
 
 
 
-class qupent:
+class quhex:
     '''
     Atom with 5 levels.
 
@@ -302,6 +349,7 @@ class qupent:
        e  |   2   |      e
        o  |   3   |      d
        X  |   4   |      e   (excited coupled to 0 state)
+       0  |   5   |      d
     ...
 
     Attributes
@@ -312,12 +360,12 @@ class qupent:
    
     '''
     def __init__(self,dim_pos,cavity_dim_pos):
-        self.dim = 5
+        self.dim = 6
         self.dim_pos = dim_pos
         self.system_dim_list =[]
         self.cavity_dim_pos = cavity_dim_pos
-        self.excitations = np.array(['g', 'g', 'e' , 'd','e'])
-        self.states = np.array(['0','1' , 'e' , 'o', '2']) 
+        self.excitations = np.array(['g', 'g', 'e' , 'd','e','d'])
+        self.states = np.array(['0','1' , 'e' , 'o', 'X','O']) 
         
         self.H_coeffs = [sg.var("De", domain='positive' ,  latex_name =r'\Delta e') ,sg.var("De0", domain='positive' ,  latex_name =r'\Delta e_0'), \
              sg.var("g", domain='positive') , sg.var("g0", domain='positive',  latex_name =r'g_0') ]
@@ -384,7 +432,7 @@ class qupent:
         l1.append(qt.tensor(tensor_list))
 
         X_ket = qt.basis(self.dim,4)
-        o_ket = qt.basis(self.dim,3)
+        o_ket = qt.basis(self.dim,5)
 
         tensor_list = id_operator_list(self.system_dim_list)
         tensor_list[self.dim_pos] = o_ket*X_ket.dag()

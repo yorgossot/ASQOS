@@ -3,7 +3,8 @@
 Add the system in the system string.
 
 - `x` corresponds to auxiliary atom
-- `o` corresponds to atom with 4 levels
+- `o` corresponds to qubit atom with 4 levels
+- `O` corresponds to qubit atom with 6 levels
 - `-` corresponds to optical fiber
 
 Can also derive Hamiltonians from Borregaard 2015 paper.

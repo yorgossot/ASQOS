@@ -1,3 +1,7 @@
+#
+# File containing system class that obtains effective hamiltonians and effective Lindblad operators.
+#
+
 from numpy.core.fromnumeric import prod
 import qutip as qt
 import numpy as np
@@ -19,7 +23,7 @@ class system:
 
     Initialize by giving a string containing:
     x : auxiliary atom
-    o : Borregaard atom
+    o : qubit atom
     - : optical fiber
 
     Borregaard et al 2015
@@ -63,6 +67,8 @@ class system:
         self.ManyVariables = ManyVariables
         self.MMA = MMA
         
+        # Creation of the system comprised of the elements that make up the system.
+        # Elements being o, x, O , -
         self.size = len(system_string)
         self.elements = []
         self.dim_list =[]
@@ -73,12 +79,13 @@ class system:
             dim_pos +=  self.elements[-1].size
             self.dim *=  self.elements[-1].dim
             self.dim_list.append(self.elements[-1].dim_list)
-        print(f'Initializing system {system_string}  ...')
+
+        print(f'Initializing system {system_string} ...')
         t_start = time.time()
         self.update_subelements()
-        print('Constructing states and excitations...')
+        print('Constructing states and excitations ...')
         self.construct_states_and_excitations()
-        print('Constructing ground and first-excited statespace...')
+        print('Constructing ground and first-excited statespace ...')
         self.construct_gs_e1_dec_subspace()
         self.obtain_energy_info()    
         print('Constructing gs_hamiltonian ...')  
@@ -87,9 +94,9 @@ class system:
         self.construct_e1_hamiltonian()
         print('Constructing interactions V_plus and V_minus ...')
         self.construct_V()
-        print('Constructing NJ_hamiltonian  ...')        
+        print('Constructing NJ_hamiltonian ...')        
         self.construct_nj_hamiltonian()
-        print('Inverting NJ_hamiltonian  ...')        
+        print('Inverting NJ_hamiltonian ...')        
         self.construct_nj_hamiltonian_inverse()
         print('Constructing eff_hamiltonian and effective lindblad operators ...')   
         self.construct_eff_hamiltonian_lindblads()
@@ -102,7 +109,8 @@ class system:
 
     def update_subelements(self):
         '''
-        Communicate the dimension_list to all (sub)elements and potentially implement many variables.
+        Communicate the dimension_list to all (sub)elements, potentially implement many variables and off-two photon resonance setting.
+        Many variables means that not all detunings De will be the same.
         '''
         flatten = lambda t: [item for sublist in t for item in sublist] #expression that flattens list
         flattened_list = flatten(self.dim_list)
@@ -120,8 +128,7 @@ class system:
                 for sub_elem in elem.sub_elements:
                     self.variable_index = sub_elem.update_index(self.variable_index)
 
-        #TwoPhotonResonance implementation
-        
+        #TwoPhotonResonance implementation    
         if self.TwoPhotonResonance == False:
             for elem in self.elements:
                 for sub_elem in elem.sub_elements:
@@ -131,7 +138,9 @@ class system:
     def construct_states_and_excitations(self):
         '''
         Creates the 'str' vectors self.excitations  and  self.states.
-        Each entry will ch
+        Each entry will contain a string representing the excitation/state of each subelement in the system.
+
+        For example, in o-x it will be a string of length 5 (2 cavities, 2 atoms and 1 fiber.)
         '''
         self.excitations = ['']*self.dim
         self.states = ['']*self.dim
@@ -310,7 +319,7 @@ class system:
         '''
         Constructs ground state Hamiltonian in gs_e1_dec subspace, corresponding state-vectors and corresponding excitation.
 
-        Note that the gs_hamiltonian will be a numpy array and not a qt objeect.
+        Note that the gs_hamiltonian will be a sage matrix and not a qt object.
         '''
         self.gs_hamiltonian = np.zeros((self.gs_e1_dec_dim,self.gs_e1_dec_dim) , dtype = 'complex128')
 
@@ -324,12 +333,11 @@ class system:
             h_reduced[: , self.pos_dec] = 0
             self.gs_hamiltonian = self.gs_hamiltonian + coeff * sg.matrix(h_reduced)
         
+        # Because hamiltonians are created without the complex conjugate, we have to add the complex conjugate (if it is not diagonal).
+        # The routine below takes care of it.
         ones_w_0diag = np.ones((self.gs_e1_dec_dim,self.gs_e1_dec_dim))
         np.fill_diagonal(ones_w_0diag , 0)
         ones_w_0diag = sg.matrix(ones_w_0diag ) + sg.var('x')*sg.matrix(np.zeros((self.gs_e1_dec_dim,self.gs_e1_dec_dim)))
-
-                 
-
 
         self.gs_hamiltonian =  self.gs_hamiltonian   + elementwise(sg.operator.mul, self.gs_hamiltonian , ones_w_0diag).conjugate_transpose()
 
@@ -341,7 +349,7 @@ class system:
         '''
         Constructs the first excited state Hamiltonian in gs_e1_dec subspace, corresponding state-vectors and corresponding excitation.
 
-        Note that the e1_hamiltonian will be a numpy array and not a qt objeect.
+        Note that the e1_hamiltonian will be a sage matrix and not a qt object.
         '''
         
         self.e1_hamiltonian = sg.matrix ( np.zeros((self.gs_e1_dec_dim,self.gs_e1_dec_dim), dtype = 'complex128') )
@@ -353,6 +361,8 @@ class system:
             h_reduced[: , self.pos_dec] = 0       
             self.e1_hamiltonian += coeff * sg.matrix( h_reduced  )     
 
+        # Because hamiltonians are created without the complex conjugate, we have to add the complex conjugate (if it is not diagonal).
+        # The routine below takes care of it.
         ones_w_0diag = np.ones((self.gs_e1_dec_dim,self.gs_e1_dec_dim))
         np.fill_diagonal(ones_w_0diag , 0)
         ones_w_0diag = sg.matrix(ones_w_0diag ) + sg.var('x')*sg.matrix(np.zeros((self.gs_e1_dec_dim,self.gs_e1_dec_dim)))
@@ -367,7 +377,7 @@ class system:
         '''
         Constructs  V+ and V- in gs_e1_dec subspace, corresponding state-vectors and corresponding excitation.
 
-        Note that the e1_hamiltonian will be a numpy array and not a qt objeect.
+        Note that the V_plus and V_minus will be a sage matrix and not qt objects.
         '''
 
         self.V_plus = sg.matrix( np.zeros((self.gs_e1_dec_dim,self.gs_e1_dec_dim) , dtype = 'complex128')  ) * sg.var('x')
@@ -386,7 +396,7 @@ class system:
 
     def construct_nj_hamiltonian(self):
         '''
-        Constructs the nj Hamiltonian.
+        Constructs the no-jump Hamiltonian from the excited hamiltonian and the lindblad operators.
         '''
 
         self.L_sum =  sg.copy(self.V_plus.parent().zero())
@@ -430,9 +440,6 @@ class system:
         for i in zero_pos:         
             self.nj_hamiltonian_inv[i,i] = 0
 
-        #simplify through mathematica if there is access to it
-        #if self.MMA == True:
-        #    self.nj_hamiltonian_inv = MMA_simplify(self.nj_hamiltonian_inv)
 
 
 
@@ -469,82 +476,3 @@ class system:
             self.eff_lindblad_list.append( L_eff )
 
     
-    def solve_master_equation(self ):
-        self.rho_matrix = sg.copy( self.eff_hamiltonian.parent().zero())
-        t =sg.var('t')
-        
-        self.rhos = []
-        #creates rho matrix in the gs positions only
-        for (i,ii) in enumerate(self.pos_gs):
-            for (j,jj) in enumerate(self.pos_gs):
-                self.rhos.append( sg.function( f'rho_{i}{j}' , latex_name = f'\\rho_{{ {i}{j} }}'  )(t) )
-                self.rho_matrix[ii,jj] = self.rhos[-1]
-
-        #adds commutator
-        self.rho_matrix += -sg.I * (self.eff_hamiltonian *self.rho_matrix - self.rho_matrix * self.eff_hamiltonian )
-
-        #adds sum of lind
-        for l_eff in self.eff_lindblad_list:
-            self.rho_matrix += l_eff* self.rho_matrix * l_eff.conjugate_transpose()
-            
-            ldl_eff = l_eff.conjugate_transpose() * l_eff
-            self.rho_matrix += -1/2 * ( ldl_eff * self.rho_matrix + self.rho_matrix * ldl_eff )
-        
-        #projects everything on gs subspace
-        self.rho_matrix_rh = self.rho_matrix[self.pos_gs,self.pos_gs]
-
-        self.rho_matrix_lh = sg.copy( self.rho_matrix_rh.parent().zero())
-        ind = 0
-        for i in range(self.gs_dim):
-            for j in range(self.gs_dim):
-                self.rho_matrix_lh[i,j] = sg.diff( self.rhos[ind] ,t)
-                ind +=1
-
-        '''
-        Solution omitted until  the coefficient mess is fixed.
-        
-        #self.SDEs = self.rho_matrix_lh == self.rho_matrix_rh
-
-        #self.density_matrix_t = sg.desolve_system( self.SDE , self.rhos )
-        '''
-
-
-
-    def solve_tayl_master_equation(self, eff_hamiltonian_tayl, eff_lind_list_tayl ):
-        self.rho_matrix = sg.copy( self.eff_hamiltonian.parent().zero())
-        t =sg.var('t')
-        
-        #creates rho matrix in the gs positions only
-        self.rhos = []
-        for (i,ii) in enumerate(self.pos_gs):
-            for (j,jj) in enumerate(self.pos_gs):
-                self.rhos.append( sg.function( f'rho_{i}{j}' , latex_name = f'\\rho_{{ {i}{j} }}'  )(t) )
-                self.rho_matrix[ii,jj] = self.rhos[-1]
-
-        #adds commutator
-        self.rho_matrix += -sg.I * (eff_hamiltonian_tayl *self.rho_matrix - self.rho_matrix * eff_hamiltonian_tayl )
-
-        #adds sum of lind
-        for l_eff in eff_lind_list_tayl:
-            self.rho_matrix += l_eff* self.rho_matrix * l_eff.conjugate_transpose()
-            
-            ldl_eff = l_eff.conjugate_transpose() * l_eff
-            self.rho_matrix += -1/2 * ( ldl_eff * self.rho_matrix + self.rho_matrix * ldl_eff )
-        
-        #projects everything on gs subspace
-        self.rho_matrix_rh = self.rho_matrix[self.pos_gs,self.pos_gs]
-
-        self.rho_matrix_lh = sg.copy( self.rho_matrix_rh.parent().zero())
-        ind = 0
-        for i in range(self.gs_dim):
-            for j in range(self.gs_dim):
-                self.rho_matrix_lh[i,j] = sg.diff( self.rhos[ind] ,t)
-                ind +=1
-
-        '''
-        Solution omitted until  the coefficient mess is fixed.
-        
-        #self.SDEs = self.rho_matrix_lh == self.rho_matrix_rh
-
-        #self.density_matrix_t = sg.desolve_system( self.SDE , self.rhos )
-        '''

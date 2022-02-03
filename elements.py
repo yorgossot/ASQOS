@@ -1,3 +1,7 @@
+#
+# File containing element class that is used by system class. 
+#
+
 import qutip as qt
 import numpy as np
 import matplotlib.pyplot as plt
@@ -10,6 +14,26 @@ from components import *
 from functions import *
 
 class element:
+    '''
+    Class containing elements of the system. Valid elements are:
+
+    - : fiber 
+    x : auxiliary atom in a cavity
+    o : qubit atom in a cavity with 1-e transition coupled to the cavity
+    O : qubit atom in a cavity with 1-e transition coupled to the cavity and 0-e2 coupled to the cavity as well
+    
+    1 : a single cavity with an auxiliary atom and 1 qubit atom like in o
+    2 : a single cavity with an auxiliary atom and 2 qubit atom like in o
+    3 : a single cavity with an auxiliary atom and 3 qubit atom like in o
+
+    t :  semi symmetric shaped configuration with  o-o-o
+                                                     |      (not experimentally feasible)
+                                                     x
+
+    T :  fuly symmetric shaped configuration with  o-x-o
+                                                     |      (not experimentally feasible)
+                                                     o
+    '''
     def __init__(self,  pos , type, dim_pos ):
         self.system_dim_list =[]
         self.pos = pos
@@ -25,13 +49,13 @@ class element:
             self.sub_elements.append( cavity(cavity_dim_pos) )  
             self.sub_elements.append( qutrit(atom_dim_pos , cavity_dim_pos ) )
         elif type == 'O':            
-            self.dim = 2 * 5
-            self.dim_list = [2 , 5]
+            self.dim = 2 * 6
+            self.dim_list = [2 , 6]
             self.size = 2
             cavity_dim_pos = dim_pos
             atom_dim_pos = cavity_dim_pos + 1
             self.sub_elements.append( cavity( cavity_dim_pos) ) 
-            self.sub_elements.append( qupent(atom_dim_pos , cavity_dim_pos ) )
+            self.sub_elements.append( quhex(atom_dim_pos , cavity_dim_pos ) )
         elif type == 'o':            
             self.dim = 2 * 4
             self.dim_list = [2 , 4]
