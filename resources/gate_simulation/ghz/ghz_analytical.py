@@ -180,8 +180,8 @@ class Analytical():
         
         parameters_to_optimize = [ sg.var('De'),  sg.var('DE'), sg.var('tgr')]
         # Add rotation parameters depending on the ghz_dim
-        for i in range(opt_settings_dict["ghz_dim"] ): parameters_to_optimize.append( sg.var(f'r{i}_r') ) 
-        
+        #for i in range(opt_settings_dict["ghz_dim"] ): parameters_to_optimize.append( sg.var(f'r{i}_r') ) 
+        for i in range(4): parameters_to_optimize.append( sg.var(f'r{i}_r') ) 
         num_parameters = len(parameters_to_optimize)    
         
         global cost_function

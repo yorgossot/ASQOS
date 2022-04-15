@@ -6,7 +6,6 @@ import sage.all as sg
 import qutip as qt
 
 ###############################################  Parameters  ##########################################################
-maximum_cost = 100
 
 
 ###############################################  Import data  ##########################################################
@@ -26,33 +25,21 @@ with  open('resources/experimental_values.json') as json_file:
 def gate_performance_cost_function(performance_dict, opt_settings_dict):
     '''
     Cost function to be minimized in order to achieve maximum performance.
-    Designed to handle arrays as well.
-    The function should be smaller than 1.
     '''
+    maximum_cost = 100*opt_settings_dict['fidelity_cap']
+    #when the fidelity cap is achieved, the cost will be 0
 
-    def performance_function(performance_dict):
-        '''
-        Here the actual cost function is defined.
-        '''
-        if performance_makes_sense(performance_dict):
-            t_conf = time_interval_of_confidence(opt_settings_dict,performance_dict)
-            if performance_dict['fidelity'] >= opt_settings_dict['fidelity_cap']:
-                cost = maximum_cost - 100*opt_settings_dict['fidelity_cap'] - 1/ t_conf
-            else:
-                cost = maximum_cost - 100*performance_dict['fidelity']
+    if performance_makes_sense(performance_dict):
+        t_conf = time_interval_of_confidence(opt_settings_dict,performance_dict)
+        if performance_dict['fidelity'] >= opt_settings_dict['fidelity_cap']:
+            cost = maximum_cost - 100*opt_settings_dict['fidelity_cap'] - 1/ t_conf
         else:
-            # if the performance parameters dont make sense, give the maximum cost 
-            cost = maximum_cost
-        return cost
-    
-    # handling of arrays
-    if type(performance_dict) == dict:
-        return performance_function(performance_dict)
+            cost = maximum_cost - 100*performance_dict['fidelity']
     else:
-        cost_array = np.zeros_like(performance_dict,dtype=float)
-        for idx, _ in np.ndenumerate(performance_dict):
-            cost_array[idx] = performance_function(performance_dict[idx] )
-        return cost_array
+        # if the performance parameters dont make sense, give the maximum cost 
+        cost = maximum_cost
+    return cost
+    
 
 
 
@@ -75,6 +62,7 @@ def time_interval_of_confidence(opt_settings_dict, performance_dict ):
         else:
             t_conf = 10**9
     else:
+        # Memory is used
         if opt_settings_dict["ghz_dim"] == 3:
             p_lookup_table = p_lookup_table_ghz3
         elif opt_settings_dict["ghz_dim"] == 4:
@@ -113,7 +101,7 @@ def performance_makes_sense(performance_dict):
 
 def ten_u(pair,evolution,n_qubits):
     '''
-    Works out the tensor product of U in a 4 qubit level system if U is diagonal.
+    Works out the tensor product of U in a n_qubit level system if U is diagonal.
     '''
     ten_matr = sg.Matrix(sg.SR,np.zeros((2**n_qubits,2**n_qubits)))
 
@@ -194,9 +182,9 @@ def GHZ_3_symbolic_fidelity_from_evolution(evolution,rotation):
     Returns the fidelity of a 3-GHZ state given a unitary when that is in symbolic form
     '''
     n_qubits = 3
-    GHZ_3_state = np.zeros(2**n_qubits)
-    GHZ_3_state[[0,-1]] = 1/np.sqrt(2)
-    GHZ_3_state_row_vec = sg.vector(sg.SR, GHZ_3_state).row()
+    GHZ_state = np.zeros(2**n_qubits)
+    GHZ_state[[0,-1]] = 1/np.sqrt(2)
+    GHZ_state_row_vec = sg.vector(sg.SR,GHZ_state).row()
 
     # If given in diagonal form, make into 4x4
     if np.shape(evolution) != (4,4):
@@ -204,7 +192,7 @@ def GHZ_3_symbolic_fidelity_from_evolution(evolution,rotation):
     
 
     rots = []
-    for i in range(3): rots.append(sg.var(f'r{i}_r')*rotation)   
+    for i in range(4): rots.append(sg.var(f'r{i}_r')*rotation)   
     
     R = []
     for rot_val in rots:
@@ -215,7 +203,7 @@ def GHZ_3_symbolic_fidelity_from_evolution(evolution,rotation):
 
     H = sg.Matrix( qt.qip.operations.hadamard_transform(1).data.toarray() )
     plus_state = qt.Qobj(np.array([1,1])/np.sqrt(2) )
-    init_state = qt.tensor(plus_state,plus_state,plus_state)
+    init_state = qt.tensor(*tuple(plus_state for i in range(n_qubits)))
 
 
     current_state = sg.vector(init_state.data.toarray().reshape(2**n_qubits)).column()
@@ -225,8 +213,8 @@ def GHZ_3_symbolic_fidelity_from_evolution(evolution,rotation):
     # Apply gate (0,1) and post gate rotations
     current_state =   ten_r(H,1,n_qubits)*ten_r(R[0],1,n_qubits)*ten_r(R[1],0,n_qubits)*ten_u((0,1),evolution,n_qubits)* current_state
     # Apply gate (0,2) and post gate rotations
-    current_state =   ten_r(H,2,n_qubits)*ten_r(R[0],2,n_qubits)*ten_r(R[2],0,n_qubits)*ten_u((0,2),evolution,n_qubits)* current_state
+    current_state =   ten_r(H,2,n_qubits)*ten_r(R[3],2,n_qubits)*ten_r(R[2],0,n_qubits)*ten_u((0,2),evolution,n_qubits)* current_state
 
-    fidelity_sg =  sg.abs_symbolic( (GHZ_3_state_row_vec * current_state)[0][0]  ) **2 
+    fidelity_sg =  sg.abs_symbolic( (GHZ_state_row_vec * current_state)[0][0]  ) **2 
 
     return fidelity_sg

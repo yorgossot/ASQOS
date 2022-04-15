@@ -13,16 +13,98 @@ from itertools import product
 from IPython.display import clear_output, display
 import matplotlib.style
 matplotlib.style.use('default')
-params = {'legend.fontsize': 'xx-large',
-          'figure.figsize': (15, 10),
-         'axes.labelsize': 'xx-large',
-         'axes.titlesize':'xx-large',
-         'xtick.labelsize':'xx-large',
-         'ytick.labelsize':'xx-large'}
-pylab.rcParams.update(params)
 
 with  open('resources/experimental_values.json') as json_file: 
     experimental_values_dict = json.load(json_file) 
+
+
+def plot_results(result_array,plot_big=False):
+    '''
+    Plots heatmap for result array.
+    '''
+    set_plot_big(plot_big)
+    if plot_big:
+        font_size = "x-large"
+    else:
+        font_size = None
+
+    shape = np.shape(result_array)
+    C_dim = shape[0]
+    spl_dim = shape[1]
+    Analytical = True
+    
+    kPlot = result_array[0][0]['hardware']['k']
+    cPlot = kPlot / (4-4*kPlot)
+
+    
+    opt_settings_dict = result_array[0][0]['opt_settings']
+    
+    C_sweep = []
+    AllLabels = [["" for i in range(spl_dim)]for j in range(C_dim)]
+    plotted_values = np.zeros(np.array(AllLabels).shape)
+    for i in range(C_dim):
+        C = result_array[i][0]['hardware']['C']
+        C_sweep.append(C)
+        
+        spl_sweep = []
+        for j in range(spl_dim):
+            spl = result_array[0][j]['hardware']['max_split'] 
+            spl_sweep.append(spl)
+            
+            res = result_array[i][j]
+            
+            # Extreact parameters
+            opt_tg = res['performance']['gate_time']
+            opt_fid = res['performance']['fidelity']
+            opt_p_success = res['performance']['p_success']
+            fidelity , p_success, gate_time = opt_fid , opt_p_success , opt_tg
+            t_conf = res['performance']['t_conf']
+            min_cost_function = res['cost']      
+            confidence_interval = opt_settings_dict["confidence_interval"]
+            
+            plotted_values[i][j] = min_cost_function       
+            
+
+            AllLabels[i][j] += '$F='+ str(np.round(fidelity*100,decimals=2))+'\%$\n'
+            AllLabels[i][j] += '$P_{succ}='+ str(np.round(p_success*100,decimals=2))+'\%$\n'
+            AllLabels[i][j] += '$t_g='+ str(quantiphy.Quantity(gate_time/experimental_values_dict['gamma']))+r's$'
+            AllLabels[i][j] += '\n$t_{'+str(np.round(confidence_interval,decimals=2)) +'} = '+ str(quantiphy.Quantity(t_conf)) +r's$'
+            AllLabels[i][j] += '\n$c_f='+ str( int( min_cost_function))+'$'
+            
+
+
+    fig, ax = plt.subplots()
+
+
+    ax = sns.heatmap(plotted_values,yticklabels=C_sweep,xticklabels=spl_sweep,cmap='gray_r', linewidth=0.5,annot=AllLabels, fmt = ''\
+        ,cbar_kws={'label': 'Cost Function'}, annot_kws={"size": font_size}) #Greys
+    ax.set_ylabel('Cooperativity')
+    ax.set_xlabel(r'Max Detuning Split $(\gamma)$')
+    ax.set_title(f'Gate Performance for {opt_settings_dict["ghz_dim"]}-GHZ vs Cooperativity & Detuning Split \nwhen $k={kPlot} \Leftrightarrow c = {np.round(cPlot,decimals=1)}$\n'
+    +r' $(\Delta_e,\Delta_E,t_g,rot)$ are optimized')
+    plt.show() 
+    #figure = ax.get_figure()
+    #figure.savefig(f'plots/OptimizedHeatmap.svg',transparent=False)
+    # Reset big plotting
+    set_plot_big(False)
+
+
+def set_plot_big(plot_big):
+    '''
+    Makes plotting bigger
+    '''
+    if plot_big:
+        params = {'legend.fontsize': 'xx-large',
+            'figure.figsize': (15, 10),
+            'axes.labelsize': 'xx-large',
+            'axes.titlesize':'xx-large',
+            'xtick.labelsize':'xx-large',
+            'ytick.labelsize':'xx-large'}
+        pylab.rcParams.update(params)
+    else:
+        matplotlib.style.use('default')
+
+
 
 class HiddenPrints:
     def __enter__(self):
