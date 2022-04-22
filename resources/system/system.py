@@ -304,6 +304,8 @@ class system:
                 for (i,l_el) in enumerate(lind):
                     self.Lindblad_list.append(lind[i])
                     self.L_coeffs.append(sub_elem.L_coeffs[i])
+        
+        self.number_of_lindblads = len(self.Lindblad_list)
 
 
 

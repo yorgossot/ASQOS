@@ -1,16 +1,18 @@
 #
 # File containing some extra functions to be used by the notebooks.
 #
-import tqdm, itertools,math,os, sys, copy, time,json, quantiphy
+import tqdm, itertools,math,os, sys, copy, time,json, quantiphy, gc
 import matplotlib.pyplot as plt
 import matplotlib.pylab as pylab
 import sage.all as sg
+import qutip as qt
 import seaborn as sns
 import numpy as np
 from importlib import reload  
 import multiprocessing.pool as mp
 from itertools import product
 from IPython.display import clear_output, display
+from pprint import pprint
 import matplotlib.style
 matplotlib.style.use('default')
 
@@ -175,12 +177,13 @@ def MMA_simplify( expr , full=False):
     Simplifies expression with the use of Mathematica and returns the result in SageMath.
     Can be used for both matrices and symbolic expressions.
     '''
+    mathematica_to_sagemath = {'Im':sg.imag_part,"Re":sg.real,"E":sg.e}
     if full==True:
         expr_simpl_m  =  expr._mathematica_().FullSimplify()
     else:
         expr_simpl_m  =  expr._mathematica_().Simplify()
 
-    expr_simpl_sg = expr_simpl_m._sage_()
+    expr_simpl_sg = expr_simpl_m._sage_(locals=mathematica_to_sagemath)
     
     if  type(expr_simpl_sg) is list:
         #the expression is a matrix. needs a modification

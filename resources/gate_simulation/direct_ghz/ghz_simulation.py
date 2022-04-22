@@ -4,33 +4,30 @@
 
 from ...system import system
 from . import ghz_analytical
-from . import bell_pair_superoperator
 from scipy.optimize import minimize
-import copy, pickle
+import copy
 import multiprocessing as mp
 import sage.all as sg
 import numpy as np
+import pickle 
 ############################################### Classes ##########################################################
 
 
 class Simulation():
 
-    def __init__(self,setup_char,load_setup = True, load_analytical=True):
-        self.setup_char = setup_char
-        self.load_analytical = load_analytical
-        if load_setup == True: 
-            print(f"Loading {setup_char} setup")
-            # Load from saved object to save time and memory.   
-            with open(f'saved_objects/setups/{setup_char}.pkl', 'rb') as inp:
-                self.setup = pickle.load(inp)           
+    def __init__(self,load):
+        self.setup_char = "O-O-x-O-"
+        if load:
+            print('Loading object O-O-x-O- ')    
+            with open("saved_objects/O-O-x-O-.pkl", 'rb') as inp:
+                self.setup = pickle.load(inp)
         else:
-            self.setup = system.system(setup_char,MMA=True,ManyVariables=False,TwoPhotonResonance= True)
+            self.setup = system.system(self.setup_char,MMA=True,ManyVariables=True,TwoPhotonResonance= True)
         self.variables_declaration()
+        self.equate_detunings_for_symmetry()
         self.create_parameter_dict()
         print('Preparing Analytical sub-class')
         self.Analytical = ghz_analytical.Analytical(self)
-        print('Preparing SuperoperatorBellPair sub-class')
-        self.SuperoperatorBellPair = bell_pair_superoperator.Superoperator(self)
         print('\nDone!')
         
         
@@ -66,15 +63,31 @@ class Simulation():
 
 
         self.realistic_parameters = copy.deepcopy(self.parameters)
-        gamma_g_real = 0.01 * gamma_val
-        gamma_f_real = 0.99 * gamma_val
+        gamma_g_real = 0.05 * gamma_val
+        gamma_f_real = 0.95 * gamma_val
         self.realistic_parameters[sg.var('gamma_g')] = gamma_g_real
         self.realistic_parameters[sg.var('gamma_f')] = gamma_f_real
+
+    def equate_detunings_for_symmetry(self):
+        '''
+        Substitute detunings so that the setup is symmetric.
+        '''
+        symmetrical_substitution = {sg.var('De3'): sg.var('De2'),sg.var('De03'): sg.var('De02')}
+        
+        self.setup.eff_hamiltonian = self.setup.eff_hamiltonian.subs(symmetrical_substitution)
+        self.setup.eff_hamiltonian_gs = self.setup.eff_hamiltonian_gs.subs(symmetrical_substitution)
+
+        for lind_op in range(self.setup.number_of_lindblads):
+            self.setup.eff_lindblad_list[lind_op] = self.setup.eff_lindblad_list[lind_op].subs(symmetrical_substitution)
+
+
 
 
     def variables_declaration(self):
         sg.var('DEg',domain='positive',  latex_name =r'\Delta_{E\gamma}')
         sg.var('Deg',domain='positive',  latex_name =r'\Delta_{e\gamma}')
+        sg.var('De1','De2',"De3",domain='positive')
+        sg.var('De01','De02',"De03",domain='positive')
         sg.var('c',domain='positive',  latex_name =r'c')
         sg.var('C',domain='positive',  latex_name =r'C')
         sg.var('gamma','DE','De','g','g_f','Omega','v','gamma_f','gamma_g','gamma0','De0','phi','g0','gamma0',domain='positive')

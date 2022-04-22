@@ -380,7 +380,8 @@ class quhex:
         self.L_coeffs = [sg.sqrt( sg.var("gamma", domain='positive' ,  latex_name =r'\gamma')) ,sg.sqrt( sg.var("gamma0", domain='positive' ,  latex_name =r'\gamma_0')) ]
 
     def update_index(self, variable_index):
-        self.H_coeffs = [sg.var(f'De{variable_index}', domain='positive' ,  latex_name =fr'{{\Delta e}}_{{{variable_index}}}') , sg.var("g", domain='positive')]
+        self.H_coeffs = [sg.var(f"De{variable_index}", domain='positive' ,  latex_name =r'\Delta e') ,sg.var(f"De0{variable_index}", domain='positive' ,  latex_name =r'\Delta e_0'), \
+             sg.var("g", domain='positive') , sg.var("g0", domain='positive',  latex_name =r'g_0') ]
         return variable_index + 1
     
     def hamiltonian(self):
