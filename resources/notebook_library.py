@@ -30,27 +30,26 @@ def plot_results(result_array,plot_big=False):
     else:
         font_size = None
 
+
+
+
     shape = np.shape(result_array)
-    C_dim = shape[0]
+    k_dim = shape[0]
     spl_dim = shape[1]
     Analytical = True
-    
-    kPlot = result_array[0][0]['hardware']['k']
-    cPlot = kPlot / (4-4*kPlot)
 
-    
     opt_settings_dict = result_array[0][0]['opt_settings']
     
-    C_sweep = []
-    AllLabels = [["" for i in range(spl_dim)]for j in range(C_dim)]
+    k_sweep = []
+    AllLabels = [["" for i in range(spl_dim)]for j in range(k_dim)]
     plotted_values = np.zeros(np.array(AllLabels).shape)
-    for i in range(C_dim):
-        C = result_array[i][0]['hardware']['C']
-        C_sweep.append(C)
+    for i in range(k_dim):
+        k_val = result_array[i][0]['hardware'][sg.var('k')]
+        k_sweep.append(k_val)
         
         spl_sweep = []
         for j in range(spl_dim):
-            spl = result_array[0][j]['hardware']['max_split'] 
+            spl = result_array[0][j]['hardware'][sg.var('D_max')] 
             spl_sweep.append(spl)
             
             res = result_array[i][j]
@@ -68,7 +67,7 @@ def plot_results(result_array,plot_big=False):
             
 
             AllLabels[i][j] += '$F='+ str(np.round(fidelity*100,decimals=2))+'\%$\n'
-            AllLabels[i][j] += '$P_{succ}='+ str(np.round(p_success*100,decimals=2))+'\%$\n'
+            AllLabels[i][j] += '$P_\mathrm{succ}='+ str(np.round(p_success*100,decimals=2))+'\%$\n'
             AllLabels[i][j] += '$t_g='+ str(quantiphy.Quantity(gate_time/experimental_values_dict['gamma']))+r's$'
             AllLabels[i][j] += '\n$t_{'+str(np.round(confidence_interval,decimals=2)) +'} = '+ str(quantiphy.Quantity(t_conf)) +r's$'
             AllLabels[i][j] += '\n$c_f='+ str( int( min_cost_function))+'$'
@@ -78,15 +77,14 @@ def plot_results(result_array,plot_big=False):
     fig, ax = plt.subplots()
 
 
-    ax = sns.heatmap(plotted_values,yticklabels=C_sweep,xticklabels=spl_sweep,cmap='gray_r', linewidth=0.5,annot=AllLabels, fmt = ''\
+    ax = sns.heatmap(plotted_values,yticklabels=k_sweep,xticklabels=spl_sweep,cmap='gray_r', linewidth=0.5,annot=AllLabels, fmt = ''\
         ,cbar_kws={'label': 'Cost Function'}, annot_kws={"size": font_size}) #Greys
-    ax.set_ylabel('Cooperativity')
-    ax.set_xlabel(r'Max Detuning Split $(\gamma)$')
-    ax.set_title(f'Gate Performance for {opt_settings_dict["ghz_dim"]}-GHZ vs Cooperativity & Detuning Split \nwhen $k={kPlot} \Leftrightarrow c = {np.round(cPlot,decimals=1)}$\n'
-    +r' $(\Delta_e,\Delta_E,t_g,rot)$ are optimized')
+    ax.set_ylabel(r'$\eta$')
+    ax.set_xlabel(r'$\Delta_\mathrm{max} \, (\gamma)$')
+    ax.set_title(f'Bell pair creation constrained by\nCoupling efficiency & Maximum Detuning Split')
     plt.show() 
-    #figure = ax.get_figure()
-    #figure.savefig(f'plots/OptimizedHeatmap.svg',transparent=False)
+    figure = ax.get_figure()
+    figure.savefig(f'plots/OptimizedHeatmap.pgf',transparent=False)
     # Reset big plotting
     set_plot_big(False)
 

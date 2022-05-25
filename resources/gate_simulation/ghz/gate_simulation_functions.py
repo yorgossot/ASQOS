@@ -84,7 +84,11 @@ def time_interval_of_confidence(opt_settings_dict, performance_dict ):
     return t_conf , memory_bool
 
 def time_interval_of_confidence_without_memory(opt_settings_dict,performance_dict):
-    gate_time_in_s =  performance_dict['gate_time']/experimental_values_dict['gamma'] + experimental_values_dict['t_measure']
+    # t_measure to reset the qubits by measuring and t_Hel to intialize them
+    time_to_reset = experimental_values_dict['t_measure'] + experimental_values_dict["t_H_el"]
+    # Gate time is gate_time + t_measure + t_reset 
+    gate_time_in_s =  performance_dict['gate_time']/experimental_values_dict['gamma'] +experimental_values_dict['t_measure'] + time_to_reset
+
     bell_pairs_to_create = opt_settings_dict["ghz_dim"] - 1
     #Geometric distribution with probability: ghz dimension-1: number of pairs to create
     p_succ =  performance_dict['p_success']**(bell_pairs_to_create)  
@@ -100,7 +104,11 @@ def time_interval_of_confidence_with_memory(opt_settings_dict,performance_dict):
     '''
     Finds time interval of confidence when quantum memory is assumed.
     '''
-    gate_time_in_s =  performance_dict['gate_time']/experimental_values_dict['gamma'] + experimental_values_dict['t_measure']
+    # t_measure to reset the qubits by measuring and t_Hel to intialize them
+    time_to_reset = experimental_values_dict['t_measure'] + experimental_values_dict["t_H_el"]
+    # Gate time is gate_time + t_measure + t_reset 
+    gate_time_in_s =  performance_dict['gate_time']/experimental_values_dict['gamma'] +experimental_values_dict['t_measure'] + time_to_reset
+
     bell_pairs_to_create = opt_settings_dict["ghz_dim"] - 1
 
     p_lookup_table = p_lookup_table_ghz[opt_settings_dict["ghz_dim"]]

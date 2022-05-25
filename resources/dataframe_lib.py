@@ -1,34 +1,11 @@
+from copy import deepcopy
+import sage.all as sg
 import pandas as pd
 import numpy as np
 from collections.abc import MutableMapping
 from os.path import exists
 directory_to_save = 'saved_objects/optimization_results/'
 
-
-
-def flatten_dict(d: MutableMapping, sep: str= '.') -> MutableMapping:
-    '''
-    Flatten dict
-    https://www.freecodecamp.org/news/how-to-flatten-a-dictionary-in-python-in-4-different-ways/
-    '''
-    [flat_dict] = pd.json_normalize(d, sep=sep).to_dict(orient='records')
-    return flat_dict
-
-def save_dataframe(dataframe,ghz_dim):
-    '''
-    Saves dataframe in the specified folder.
-    '''
-    dataframe.to_csv(directory_to_save+f'results_ghz_{ghz_dim}.csv', index=False)
-
-def load_results(ghz_dim,flattened_res_dict):
-    '''
-    Loads dataframe from the specified folder.
-    Flattened result is used to initialize dataframe in case the file does not exist.
-    '''
-    directory_of_file = directory_to_save+f'results_ghz_{ghz_dim}.csv'
-    if not exists(directory_of_file):
-        save_dataframe(pd.DataFrame([flattened_res_dict]),ghz_dim)
-    return pd.read_csv(directory_of_file)
 
 
 def conditionally_append_result(result_dict):
@@ -68,3 +45,79 @@ def conditionally_append_result(result_dict):
             results_df = pd.concat([results_df , pd.DataFrame([flattened_res_dict])] ,ignore_index=True)
     
     save_dataframe(results_df,ghz_dim)
+
+
+def retrieve_result(k,max_split,ghz_dim):
+    '''
+    Retrieves result for a specific simulation.
+    '''
+    
+    results_df = load_results(ghz_dim)
+
+    dict_to_match = {'hardware.k': k ,'hardware.D_max':max_split}
+    bool_df = np.ones(results_df.shape[0], dtype=bool)
+    for key  in dict_to_match:
+        bool_df = bool_df * (results_df[key] ==  dict_to_match[key])
+
+    location_in_df = results_df[bool_df].index[0]
+
+    flattened_dict = results_df.loc[location_in_df].to_dict()
+
+    unflattened_dict = unflatten(flattened_dict)
+
+    # change some entries to sg.var for consistency
+    sg_dict_unflattened_dict = deepcopy(unflattened_dict)
+    fields_to_change_to_sg = ['hardware','tuning']
+    for key in fields_to_change_to_sg:
+        del sg_dict_unflattened_dict[key]
+        sg_dict_unflattened_dict[key] = {}
+        #obtain the elements again with sg.var keys
+        for key2 in unflattened_dict[key]:
+            sg_dict_unflattened_dict[key][sg.var(key2)] = unflattened_dict[key][key2]
+
+    return sg_dict_unflattened_dict
+
+
+
+def flatten_dict(d: MutableMapping, sep: str= '.') -> MutableMapping:
+    '''
+    Flatten dict
+    https://www.freecodecamp.org/news/how-to-flatten-a-dictionary-in-python-in-4-different-ways/
+    '''
+    [flat_dict] = pd.json_normalize(d, sep=sep).to_dict(orient='records')
+    return flat_dict
+
+def save_dataframe(dataframe,ghz_dim):
+    '''
+    Saves dataframe in the specified folder.
+    '''
+    dataframe.to_csv(directory_to_save+f'results_ghz_{ghz_dim}.csv', index=False)
+
+
+def load_results(ghz_dim,flattened_res_dict= None):
+    '''
+    Loads dataframe from the specified folder.
+    Flattened result is used to initialize dataframe in case the file does not exist.
+    '''
+    directory_of_file = directory_to_save+f'results_ghz_{ghz_dim}.csv'
+    if not exists(directory_of_file):
+        save_dataframe(pd.DataFrame([flattened_res_dict]),ghz_dim)
+    return pd.read_csv(directory_of_file)
+
+
+
+
+def unflatten(dictionary):
+    '''
+    https://stackoverflow.com/a/6037657
+    '''
+    resultDict = dict()
+    for key, value in dictionary.items():
+        parts = key.split(".")
+        d = resultDict
+        for part in parts[:-1]:
+            if part not in d:
+                d[part] = dict()
+            d = d[part]
+        d[parts[-1]] = value
+    return resultDict

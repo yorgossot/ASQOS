@@ -145,19 +145,21 @@ class Analytical():
         # A dictionary of the hardware setting
         self.hardware_dict = hardware_dict
 
-        De0_val =  sg.var('De') - hardware_dict['max_split']
-
-        CcDe0_dict = {sg.var('C'): hardware_dict['C'] , sg.var('c'): hardware_dict['c'] ,sg.var('De0'): De0_val}
+        De0_val =  sg.var('De') - hardware_dict[sg.var('D_max')]
+        
+        # Contains parametric De0, thus not added to self.hardware_dict
+        hw_subs_dict = {**hardware_dict, sg.var('De0'):De0_val}
+        
 
         self.substitution_dict_hw = {}
         for diag,var in enumerate(self.H_symbolic):
-            self.substitution_dict_hw[var] = self.basic_substitution(self.setup.eff_hamiltonian_gs[diag,diag]).subs(CcDe0_dict) 
+            self.substitution_dict_hw[var] = self.basic_substitution(self.setup.eff_hamiltonian_gs[diag,diag]).subs(hw_subs_dict) 
         
         for elem,var in enumerate(self.L_symbolic):
             lind_op = elem // 4
             which   = elem % 4
             L_num = self.EffLindbladElements[lind_op][which]
-            if type(L_num) is type(sg.var('x')): L_num = L_num.subs(CcDe0_dict)
+            if type(L_num) is type(sg.var('x')): L_num = L_num.subs(hw_subs_dict)
             self.substitution_dict_hw[var] = L_num
         
         # Obtain unitary in terms of hardware parameters
@@ -179,6 +181,7 @@ class Analytical():
         tunable_parameters = [ De_val, DE_val, tg_ratio , r1_ratio , r2_ratio, r3_ratio, r4_ratio ]
         '''
         try:
+            tunable_parameters_dict[sg.var('DE')] = tunable_parameters_dict[sg.var('DE_C')] * tunable_parameters_dict[sg.var('C')]
             HL_dict = self.substitution_dict_hw.copy()
             for key in HL_dict:
                 if type(HL_dict[key]) is type(sg.var('x')): HL_dict[key] = HL_dict[key].subs(tunable_parameters_dict)
@@ -226,7 +229,8 @@ class Analytical():
         initial_params = [ De_val, DE_val, tg_ratio , r0_ratio, r1_ratio , r2_ratio, ... ]
         '''
         
-        parameters_to_optimize = [ sg.var('De'),  sg.var('DE'), sg.var('tgr')]
+        parameters_to_optimize = [sg.var('C'),sg.var('De'),  sg.var('DE_C'), sg.var('tgr')]
+        num_of_non_rot_params = len(parameters_to_optimize)
         # Add rotation parameters depending on the ghz_dim
 
         if opt_settings_dict["ghz_dim"] > 2:
@@ -235,15 +239,18 @@ class Analytical():
             for i in range(opt_settings_dict["ghz_dim"]-2): parameters_to_optimize.append( sg.var(f'r{i}_by') )
             for i in range(opt_settings_dict["ghz_dim"]-3): parameters_to_optimize.append( sg.var(f'r{i}_bz') )
             
-            self.post_rotations_range = range(3 , 3+ opt_settings_dict["ghz_dim"] )
-            self.initial_rotations_range =  range(3+ opt_settings_dict["ghz_dim"] , 3+ 2*opt_settings_dict["ghz_dim"] )
-            self.between_rotations_y_range = range(3+ 2*opt_settings_dict["ghz_dim"] , 3+ 3*opt_settings_dict["ghz_dim"] -2)
-            self.between_rotations_z_range = range(3+ 3*opt_settings_dict["ghz_dim"] -2 , 3+ 4*opt_settings_dict["ghz_dim"] -4)
+            self.post_rotations_range = range(num_of_non_rot_params , num_of_non_rot_params+ opt_settings_dict["ghz_dim"] )
+            self.initial_rotations_range =  range(num_of_non_rot_params+ opt_settings_dict["ghz_dim"] 
+                                                , num_of_non_rot_params+ 2*opt_settings_dict["ghz_dim"] )
+            self.between_rotations_y_range = range(num_of_non_rot_params+ 2*opt_settings_dict["ghz_dim"] 
+                                                , num_of_non_rot_params+ 3*opt_settings_dict["ghz_dim"] -2)
+            self.between_rotations_z_range = range(num_of_non_rot_params+ 3*opt_settings_dict["ghz_dim"] -2 
+                                                , num_of_non_rot_params+ 4*opt_settings_dict["ghz_dim"] -4)
         else:
             parameters_to_optimize.append( sg.var(f'r{0}_p') )
             parameters_to_optimize.append( sg.var(f'r{0}_i') )
-            self.post_rotations_range = range(3 , 4 )
-            self.initial_rotations_range =  range(4,5 )
+            self.post_rotations_range = range(num_of_non_rot_params , num_of_non_rot_params+1 )
+            self.initial_rotations_range =  range(num_of_non_rot_params+1,num_of_non_rot_params+2 )
             self.between_rotations_y_range = range(0)
             self.between_rotations_z_range = range(0)
 
@@ -255,8 +262,9 @@ class Analytical():
             Function that is used for minimization. Essentially it only makes use of global gate performance function.
             '''
             # Obtain non rotational parameters
-            De_val, DE_val, tg_ratio  = params[0:3]
-            tunable_parameters_dict = {sg.var('De') : De_val , sg.var('DE') : DE_val , sg.var('tgr'): tg_ratio}
+            tunable_parameters_dict = {}
+            for i in range(num_of_non_rot_params):
+                tunable_parameters_dict[parameters_to_optimize[i]] = params[i]
             
             # Obtain rotations values
             for i,ind in enumerate(self.post_rotations_range):
@@ -288,7 +296,7 @@ class Analytical():
         self.opt_tunable_dict = {parameters_to_optimize[i]: result.x[i] for i in range(num_parameters)}
             
         self.optimized_performance_dict = self.tunable_performance(self.opt_tunable_dict,opt_settings_dict)
-
+        self.opt_tunable_dict[sg.var('DE')] = self.opt_tunable_dict[sg.var('DE_C')] * self.opt_tunable_dict[sg.var('C')]
         self.opt_tunable_dict[sg.var('tgs')] = self.optimized_performance_dict['gate_time']
         self.opt_tunable_dict[sg.var('rot')] = sg.real(self.rotation_hardware.subs(self.opt_tunable_dict))
         
