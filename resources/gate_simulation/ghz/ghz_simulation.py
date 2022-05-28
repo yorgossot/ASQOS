@@ -68,8 +68,8 @@ class Simulation():
 
 
         self.realistic_parameters = copy.deepcopy(self.parameters)
-        gamma_g_real = 0.01 
-        gamma_f_real = 0.99 
+        gamma_g_real = 0.05 
+        gamma_f_real = 0.95 
         self.realistic_parameters[sg.var('gamma_g')] = gamma_g_real
         self.realistic_parameters[sg.var('gamma_f')] = gamma_f_real
 

@@ -47,14 +47,14 @@ def conditionally_append_result(result_dict):
     save_dataframe(results_df,ghz_dim)
 
 
-def retrieve_result(k,max_split,ghz_dim):
+def retrieve_result(k,max_split,fidelity_cap,ghz_dim):
     '''
     Retrieves result for a specific simulation.
     '''
     
     results_df = load_results(ghz_dim)
 
-    dict_to_match = {'hardware.k': k ,'hardware.D_max':max_split}
+    dict_to_match = {'hardware.k': k ,'hardware.D_max':max_split,'opt_settings.fidelity_cap':fidelity_cap}
     bool_df = np.ones(results_df.shape[0], dtype=bool)
     for key  in dict_to_match:
         bool_df = bool_df * (results_df[key] ==  dict_to_match[key])
@@ -67,17 +67,36 @@ def retrieve_result(k,max_split,ghz_dim):
 
     # change some entries to sg.var for consistency
     sg_dict_unflattened_dict = deepcopy(unflattened_dict)
-    fields_to_change_to_sg = ['hardware','tuning']
-    for key in fields_to_change_to_sg:
-        del sg_dict_unflattened_dict[key]
-        sg_dict_unflattened_dict[key] = {}
-        #obtain the elements again with sg.var keys
-        for key2 in unflattened_dict[key]:
-            sg_dict_unflattened_dict[key][sg.var(key2)] = unflattened_dict[key][key2]
+    
+    # make keys of 'hardware' and 'tuning' into sage variables
+    entries_to_change_to_sg = ['hardware','tuning']
+    sg_dict_unflattened_dict = cast_str_variables_to_sage(sg_dict_unflattened_dict,entries_to_change_to_sg)
 
     return sg_dict_unflattened_dict
 
+def cast_sage_variables_to_str(dict_to_cast,entries_of_keys):
+    '''
+    Takes a dictionary and substitutes all elements of the subdictionaries entries_to_cast (which is a list) with a string instead of sage variables.
+    '''
+    result_dict = deepcopy(dict_to_cast)
+    for entry_dict in entries_of_keys:
+        del result_dict[entry_dict]
+        result_dict[entry_dict] = {}
+        for key in dict_to_cast[entry_dict]:
+            result_dict[entry_dict][str(key)] = dict_to_cast[entry_dict][key]
+    return result_dict
 
+def cast_str_variables_to_sage(dict_to_cast,entries_of_keys):
+    '''
+    Takes a dictionary and substitutes all elements of the subdictionaries entries_to_cast (which is a list) with a sage variables instead of strings.
+    '''
+    result_dict = deepcopy(dict_to_cast)
+    for entry_dict in entries_of_keys:
+        del result_dict[entry_dict]
+        result_dict[entry_dict] = {}
+        for key in dict_to_cast[entry_dict]:
+            result_dict[entry_dict][sg.var(key)] = dict_to_cast[entry_dict][key]
+    return result_dict
 
 def flatten_dict(d: MutableMapping, sep: str= '.') -> MutableMapping:
     '''

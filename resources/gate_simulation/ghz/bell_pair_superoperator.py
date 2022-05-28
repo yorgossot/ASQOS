@@ -86,14 +86,24 @@ class Superoperator():
             self.eff_lind_master_eq_C.append(  self.eff_lind_master_eq[lind_op].subs(params_dict)      )
 
 
-    def simulate(self, tuning_dict ,  gamma_g_is_zero=False):
+    def simulate(self, parameter_dict ,analytical_output , gamma_g_is_zero):
         '''
         Run simulation for a specified set of values.
 
-        tuning_dict
+        parameter_dict
 
         realistic : boolean
         '''
+        
+        if analytical_output == True:
+            tuning_dict = parameter_dict['tuning']
+            tuning_dict[sg.var('De0')] =  tuning_dict[sg.var('De')] - parameter_dict["hardware"][sg.var('D_max')] 
+            tuning_dict[sg.var('r1_p')] =tuning_dict[sg.var('r0_p')]
+            tuning_dict[sg.var('r1_i')] =tuning_dict[sg.var('r0_i')]
+            tuning_dict[sg.var('c')] = parameter_dict['hardware'][sg.var('c')]
+        else:
+            tuning_dict = parameter_dict
+            
         # Change the numerical substitution if needed for gamma_g=0
         if gamma_g_is_zero != self.gamma_g_is_zero:
             self.basic_substitution(gamma_g_is_zero)
@@ -198,7 +208,8 @@ class Superoperator():
         dm_f_gs.dims =  [[2, 2], [2, 2]] 
         concurrence = qt.concurrence(dm_f_gs)
 
-        performance = {'fidelity': fidelity , 'p_success': p_success , 'gate_time': gate_time,'concurrence': concurrence}
+        performance = {'fidelity': fidelity , 'p_success': p_success , 'gate_time': gate_time,'concurrence': concurrence,
+                        'density_matrix': dm_f_gs.data.toarray()}
 
         return performance
 

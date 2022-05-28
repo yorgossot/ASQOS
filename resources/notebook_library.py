@@ -20,7 +20,7 @@ with  open('resources/experimental_values.json') as json_file:
     experimental_values_dict = json.load(json_file) 
 
 
-def plot_results(result_array,plot_big=False):
+def plot_results(result_array,setup='',plot_big=False,super=False):
     '''
     Plots heatmap for result array.
     '''
@@ -55,8 +55,17 @@ def plot_results(result_array,plot_big=False):
             res = result_array[i][j]
             
             # Extreact parameters
-            opt_tg = res['performance']['gate_time']
-            opt_fid = res['performance']['fidelity']
+            
+            if super == False:
+                opt_fid = res['performance']['fidelity']
+                opt_tg = res['performance']['gate_time']/experimental_values_dict['gamma']
+                gate_str =r'$\tilde{t}_g='
+            else:
+                # eff_time
+                opt_fid = res['super_simulation']['fidelity']
+                opt_tg = res['super_simulation']['eff_time']
+                gate_str = r'$t_g^\mathrm{eff}='
+    
             opt_p_success = res['performance']['p_success']
             fidelity , p_success, gate_time = opt_fid , opt_p_success , opt_tg
             t_conf = res['performance']['t_conf']
@@ -67,10 +76,10 @@ def plot_results(result_array,plot_big=False):
             
 
             AllLabels[i][j] += '$F='+ str(np.round(fidelity*100,decimals=2))+'\%$\n'
-            AllLabels[i][j] += '$P_\mathrm{succ}='+ str(np.round(p_success*100,decimals=2))+'\%$\n'
-            AllLabels[i][j] += '$t_g='+ str(quantiphy.Quantity(gate_time/experimental_values_dict['gamma']))+r's$'
+            AllLabels[i][j] += r'$P_\mathrm{succ}='+ str(np.round(p_success*100,decimals=2))+'\%$\n'
+            AllLabels[i][j] += gate_str+ str(quantiphy.Quantity(gate_time))+r's$'
             AllLabels[i][j] += '\n$t_{'+str(np.round(confidence_interval,decimals=2)) +'} = '+ str(quantiphy.Quantity(t_conf)) +r's$'
-            AllLabels[i][j] += '\n$c_f='+ str( int( min_cost_function))+'$'
+            AllLabels[i][j] += '\n'+r'$\lambda_c='+ str( int( min_cost_function))+'$'
             
 
 
@@ -81,10 +90,10 @@ def plot_results(result_array,plot_big=False):
         ,cbar_kws={'label': 'Cost Function'}, annot_kws={"size": font_size}) #Greys
     ax.set_ylabel(r'$\eta$')
     ax.set_xlabel(r'$\Delta_\mathrm{max} \, (\gamma)$')
-    ax.set_title(f'Bell pair creation constrained by\nCoupling efficiency & Maximum Detuning Split')
+    ax.set_title(f'{setup}\nBell pair creation constrained by\n'+r'Coupling efficiency and Maximum Detuning Split')
     plt.show() 
     figure = ax.get_figure()
-    figure.savefig(f'plots/OptimizedHeatmap.pgf',transparent=False)
+    figure.savefig(f'plots/OptimizedHeatmap{setup}.pgf',transparent=False)
     # Reset big plotting
     set_plot_big(False)
 
@@ -95,7 +104,7 @@ def set_plot_big(plot_big):
     '''
     if plot_big:
         params = {'legend.fontsize': 'xx-large',
-            'figure.figsize': (15, 10),
+            'figure.figsize': (12, 8),
             'axes.labelsize': 'xx-large',
             'axes.titlesize':'xx-large',
             'xtick.labelsize':'xx-large',
