@@ -1,4 +1,3 @@
-import imp
 from . import notebook_library
 import sage.all as sg
 mathematica_to_sagemath = {'Im':sg.imag_part,"Re":sg.real,"E":sg.exp, "Sqrt":sg.sqrt }

@@ -15,11 +15,12 @@ import pickle
 
 class Simulation():
 
-    def __init__(self,load):
+    def __init__(self,load_setup = True, load_analytical=True):
         self.setup_char = "O-O-x-O-"
-        if load:
+        self.load_analytical = load_analytical
+        if load_setup:
             print('Loading object O-O-x-O- ')    
-            with open("saved_objects/O-O-x-O-.pkl", 'rb') as inp:
+            with open("saved_objects/setups/O-O-x-O-.pkl", 'rb') as inp:
                 self.setup = pickle.load(inp)
         else:
             self.setup = system.system(self.setup_char,MMA=True,ManyVariables=True,TwoPhotonResonance= True)
@@ -40,31 +41,31 @@ class Simulation():
         # Variables that will be substituted
         self.variables = ['v','g','g_f','gamma','gamma_g','gamma_f','phi','Omega','kappa_c','kappa_b','g0','gamma0']
         
-        gamma_val = 1
-        kappa_val = 100*gamma_val
         C = sg.var('C')
         c = sg.var('c')
-        g_val = sg.sqrt( C * kappa_val * gamma_val)
+        kappa_c_val = 100 * C
+        kappa_b_val = 100*kappa_c_val*c
+        g_val = sg.sqrt( C * kappa_c_val )
 
         self.parameters =  {sg.var('gamma') : 1,
-                            sg.var('gamma0') : gamma_val,
+                            sg.var('gamma0') : 1,
                             sg.var('gamma_g') : 0,
-                            sg.var('gamma_f') : 1 * gamma_val,
-                            sg.var('kappa_b') : kappa_val,
-                            sg.var('kappa_c') : kappa_val,
+                            sg.var('gamma_f') : 1 ,
+                            sg.var('kappa_b') : kappa_b_val,
+                            sg.var('kappa_c') : kappa_c_val,
                             sg.var('g'): g_val,
                             sg.var('g_f') : g_val,
                             sg.var('g0')  : g_val,
-                            sg.var('Omega') :  sg.sqrt(C) * gamma_val * 0.25 / 2,
+                            sg.var('Omega') :  sg.sqrt(C)  * 0.25 / 2,
                             sg.var('phi') : 0,
-                            sg.var('v')   : sg.sqrt( c * kappa_val * kappa_val) 
+                            sg.var('v')   : sg.sqrt( c * kappa_c_val * kappa_b_val) 
                             }
 
 
 
         self.realistic_parameters = copy.deepcopy(self.parameters)
-        gamma_g_real = 0.05 * gamma_val
-        gamma_f_real = 0.95 * gamma_val
+        gamma_g_real = 0.05 
+        gamma_f_real = 0.95 
         self.realistic_parameters[sg.var('gamma_g')] = gamma_g_real
         self.realistic_parameters[sg.var('gamma_f')] = gamma_f_real
 

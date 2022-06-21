@@ -207,7 +207,7 @@ class Analytical():
             
             fid_expression = self.GHZ_fidelity_dict[opt_settings_dict["ghz_dim"]]['fidelity']
                
-            fidelity =   float(sg.real(fid_expression.subs(HL_dict).subs( gs=gate_time)))
+            fidelity =   float(sg.real(fid_expression.subs(HL_dict).subs( tgs=gate_time)))
 
             HL_dict.clear()        
             

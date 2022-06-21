@@ -1,11 +1,8 @@
-
-from cgitb import lookup
 import math, json
 import copy
 import numpy as np
 import sage.all as sg
 import qutip as qt
-from functools import partial
 
 ###############################################  Parameters  ##########################################################
 
