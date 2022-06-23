@@ -1,8 +1,8 @@
 import math, json
-import copy
+import sympy as sp
 import numpy as np
-import sage.all as sg
 import qutip as qt
+from sympy.physics.quantum import TensorProduct
 
 ###############################################  Parameters  ##########################################################
 
@@ -145,11 +145,11 @@ def concurrence_from_evolution(evolution,tuning_dict):
     
     plus_state = qt.Qobj(np.array([1,1])/np.sqrt(2) )
     init_state = qt.tensor(*(plus_state for i in range(n_qubits)))
-    init_state = sg.vector(init_state.data.toarray().reshape(2**2)).column()
+    init_state = sp.Matrix(init_state.data.toarray().reshape(2**2))
 
     # Add initial rotations
     for q in range(n_qubits):
-        R = R_y(tuning_dict[sg.var(f'r0_i')])
+        R = R_y(tuning_dict[sp.Symbol(f'r0_i')])
         init_state = ten_r(R,q,n_qubits=2)*init_state
 
     final_state = ten_u((0,1),evolution,2)*init_state
@@ -166,7 +166,7 @@ def ten_u(pair,evolution,n_qubits):
     '''
     Works out the tensor product of U in a n_qubit level system if U is diagonal.
     '''
-    ten_matr = sg.Matrix(sg.SR,np.zeros((2**n_qubits,2**n_qubits)))
+    ten_matr = sp.zeros(2**n_qubits,2**n_qubits)
 
     for i in range(2**n_qubits):
         i_bin = "{0:b}".format(i)
@@ -179,26 +179,25 @@ def ten_u(pair,evolution,n_qubits):
 
 def ten_r(rot_matr,qubit,n_qubits):
     '''
-    Works out the tensor product of U in a n_qubit level system if U is diagonal.
+    Works out the tensor product of R in a n_qubit level system if U is diagonal.
     '''
-    ten_matr = sg.Matrix(sg.SR,np.zeros((1,1)))
-    ten_matr[0,0] = 1
+    ten_matr = sp.Matrix([1])
     
-    I = sg.identity_matrix(2)
+    I = sp.eye(2)
     for i in range(n_qubits):
         if i ==qubit:
-            ten_matr = ten_matr.tensor_product(rot_matr)
+            ten_matr = TensorProduct(ten_matr,rot_matr)
         else:
-            ten_matr = ten_matr.tensor_product(I)
+            ten_matr = TensorProduct(ten_matr,I)
     return ten_matr
 
 def R_z(theta):
     '''
     Rz parametric qubit gate as sagemath matrix
     '''
-    r_matr = sg.Matrix(sg.SR,np.zeros((2,2)))
+    r_matr = sp.zeros(2,2)
     r_matr[0,0] = 1
-    r_matr[1,1] = sg.exp(sg.I*theta)
+    r_matr[1,1] = sp.exp(sp.I*theta)
     return r_matr
 
 
@@ -206,9 +205,18 @@ def R_y(theta):
     '''
     Ry parametric qubit gate as sagemath matrix
     '''
-    r_matr = sg.Matrix(sg.SR,np.zeros((2,2)))
-    r_matr[0,0] = sg.cos(theta/2)
-    r_matr[1,1] = sg.cos(theta/2)
-    r_matr[0,1] = -sg.sin(theta/2)
-    r_matr[1,0] = sg.sin(theta/2)
+    r_matr = sp.zeros(2,2)
+    r_matr[0,0] = sp.cos(theta/2)
+    r_matr[1,1] = sp.cos(theta/2)
+    r_matr[0,1] = -sp.sin(theta/2)
+    r_matr[1,0] = sp.sin(theta/2)
     return r_matr
+
+def posify_array(sp_array):
+    '''
+    Takes as input a sympy array and returns it in a form that assumes all variables are positive.
+    '''
+    posified_vec, posified_row_dict = sp.posify(sp_array)
+
+    result_array = (posified_vec.subs(posified_row_dict)).reshape(sp_array.rows,sp_array.cols)
+    return result_array

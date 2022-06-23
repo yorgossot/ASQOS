@@ -4,13 +4,15 @@
 
 from numpy.core.fromnumeric import prod
 import numpy as np
-import sage.all as sg
+import sympy as sp
 from collections import Counter
 import time
-
+import sys
 from . import elements
 from . import system_functions
 
+from sympy.parsing.mathematica import mathematica
+mathematica_to_sp = {'Im':sp.im ,"Re":sp.re,"E":sp.E,"Sqrt":sp.sqrt}
 
 class system:
     '''
@@ -54,7 +56,7 @@ class system:
     
     '''
  
-    def __init__(self, system_string , MMA = True , ManyVariables = False , TwoPhotonResonance = True):
+    def __init__(self, system_string , MMA = False , ManyVariables = False , TwoPhotonResonance = True):
         self.TwoPhotonResonance = TwoPhotonResonance
         self.ManyVariables = ManyVariables
         self.MMA = MMA
@@ -88,12 +90,11 @@ class system:
         self.construct_V()
         print('Constructing NJ_hamiltonian ...')        
         self.construct_nj_hamiltonian()
-        print('Inverting NJ_hamiltonian ...')        
+        print('Inverting NJ_hamiltonian ...') 
         self.construct_nj_hamiltonian_inverse()
         print('Constructing eff_hamiltonian and effective lindblad operators ...')   
         self.construct_eff_hamiltonian_lindblads()
-        #print('Constructing effective Lindblad master equation ...') 
-        #self.solve_master_equation()
+
         
         t_end = time.time()
         print(f'\nSystem  {system_string}  initialized in {round(t_end-t_start , 1)} seconds.')
@@ -275,7 +276,6 @@ class system:
         self.dec_excitations = np.delete(self.gs_e1_dec_excitations, self.pos_to_del_dec )
 
 
-        self.gs_e1_dec_matrix_space = sg.MatrixSpace( sg.SR ,self.gs_e1_dec_dim,self.gs_e1_dec_dim ,sparse=False ) 
 
 
 
@@ -317,7 +317,7 @@ class system:
         '''
         self.gs_hamiltonian = np.zeros((self.gs_e1_dec_dim,self.gs_e1_dec_dim) , dtype = 'complex128')
 
-        self.gs_hamiltonian = sg.matrix(self.gs_hamiltonian )
+        self.gs_hamiltonian = sp.Matrix(self.gs_hamiltonian )
 
         for (coeff , h) in zip(self.H_coeffs,self.H_list):
             h_reduced = system_functions.delete_from_csr( h.data, row_indices=self.pos_to_del_gs_e1_dec, col_indices=self.pos_to_del_gs_e1_dec).toarray() 
@@ -325,17 +325,12 @@ class system:
             h_reduced[: , self.pos_e1] = 0
             h_reduced[self.pos_dec, :]  = 0
             h_reduced[: , self.pos_dec] = 0
-            self.gs_hamiltonian = self.gs_hamiltonian + coeff * sg.matrix(h_reduced)
+            self.gs_hamiltonian = self.gs_hamiltonian + coeff * sp.Matrix(h_reduced)
         
         # Because hamiltonians are created without the complex conjugate, we have to add the complex conjugate (if it is not diagonal).
         # The routine below takes care of it.
-        ones_w_0diag = np.ones((self.gs_e1_dec_dim,self.gs_e1_dec_dim))
-        np.fill_diagonal(ones_w_0diag , 0)
-        ones_w_0diag = sg.matrix(ones_w_0diag ) + sg.var('x')*sg.matrix(np.zeros((self.gs_e1_dec_dim,self.gs_e1_dec_dim)))
+        self.gs_hamiltonian = system_functions.make_into_hermitian(self.gs_hamiltonian)
 
-        self.gs_hamiltonian =  self.gs_hamiltonian   + system_functions.elementwise(sg.operator.mul, self.gs_hamiltonian , ones_w_0diag).conjugate_transpose()
-
-        self.gs_hamiltonian = self.gs_e1_dec_matrix_space(self.gs_hamiltonian)
 
 
 
@@ -346,24 +341,18 @@ class system:
         Note that the e1_hamiltonian will be a sage matrix and not a qt object.
         '''
         
-        self.e1_hamiltonian = sg.matrix ( np.zeros((self.gs_e1_dec_dim,self.gs_e1_dec_dim), dtype = 'complex128') )
+        self.e1_hamiltonian = sp.Matrix ( np.zeros((self.gs_e1_dec_dim,self.gs_e1_dec_dim), dtype = 'complex128') )
         for (coeff , h) in zip(self.H_coeffs,self.H_list):
             h_reduced = system_functions.delete_from_csr( h.data, row_indices=self.pos_to_del_gs_e1_dec, col_indices=self.pos_to_del_gs_e1_dec).toarray()
             h_reduced[self.pos_gs, :]  = 0
             h_reduced[: , self.pos_gs] = 0
             h_reduced[self.pos_dec, :]  = 0
             h_reduced[: , self.pos_dec] = 0       
-            self.e1_hamiltonian += coeff * sg.matrix( h_reduced  )     
+            self.e1_hamiltonian += coeff * sp.Matrix( h_reduced  )     
 
         # Because hamiltonians are created without the complex conjugate, we have to add the complex conjugate (if it is not diagonal).
         # The routine below takes care of it.
-        ones_w_0diag = np.ones((self.gs_e1_dec_dim,self.gs_e1_dec_dim))
-        np.fill_diagonal(ones_w_0diag , 0)
-        ones_w_0diag = sg.matrix(ones_w_0diag ) + sg.var('x')*sg.matrix(np.zeros((self.gs_e1_dec_dim,self.gs_e1_dec_dim)))
-
-        self.e1_hamiltonian = self.e1_hamiltonian   + system_functions.elementwise(sg.operator.mul, self.e1_hamiltonian , ones_w_0diag).conjugate_transpose()
-
-        self.e1_hamiltonian = self.gs_e1_dec_matrix_space(self.e1_hamiltonian)
+        self.e1_hamiltonian = system_functions.make_into_hermitian(self.e1_hamiltonian)
 
 
 
@@ -374,65 +363,63 @@ class system:
         Note that the V_plus and V_minus will be a sage matrix and not qt objects.
         '''
 
-        self.V_plus = sg.matrix( np.zeros((self.gs_e1_dec_dim,self.gs_e1_dec_dim) , dtype = 'complex128')  ) * sg.var('x')
+        self.V_plus = sp.zeros(self.gs_e1_dec_dim,self.gs_e1_dec_dim  ) 
 
         for (coeff , h , gs_e1_interaction) in zip(self.H_coeffs,self.H_list , self.gs_e1_dec_int):
             if gs_e1_interaction:
                 h_reduced = system_functions.delete_from_csr( h.data, row_indices=self.pos_to_del_gs_e1_dec, col_indices=self.pos_to_del_gs_e1_dec).toarray()
-                self.V_plus += coeff * sg.matrix(h_reduced)
+                self.V_plus += coeff * sp.Matrix(h_reduced)
 
         
-        self.V_minus = self.V_plus.conjugate_transpose()
-
-        self.V_plus = self.gs_e1_dec_matrix_space(self.V_plus)
-        self.V_minus = self.gs_e1_dec_matrix_space(self.V_minus)
-        
+        self.V_minus = self.V_plus.H
+    
+    
 
     def construct_nj_hamiltonian(self):
         '''
         Constructs the no-jump Hamiltonian from the excited hamiltonian and the lindblad operators.
         '''
 
-        self.L_sum =  sg.copy(self.V_plus.parent().zero())
+        self.L_sum =  sp.zeros( self.gs_e1_dec_dim,self.gs_e1_dec_dim  ) 
 
         for (coeff , lindblad) in zip(self.L_coeffs ,self.Lindblad_list):
             l_reduced = system_functions.delete_from_csr( lindblad.data, row_indices=self.pos_to_del_gs_e1_dec, col_indices=self.pos_to_del_gs_e1_dec).toarray()      
-            L = coeff * self.gs_e1_dec_matrix_space(l_reduced)
-            self.L_sum +=  L.conjugate_transpose() * L 
+            L = coeff * sp.Matrix(l_reduced)
+            self.L_sum +=  L.H * L 
         
 
-        self.nj_hamiltonian = self.e1_hamiltonian - sg.I /2 * self.L_sum
+        self.nj_hamiltonian =  self.e1_hamiltonian - sp.I /2 * self.L_sum
 
-
+    
 
     def construct_nj_hamiltonian_inverse(self):
         '''
         Constructs nj_hamiltonian_inverse.
         
         Finds zero (row and columns) that make the array non singular. 
-        Add 1 on the diagonal, then invert  and then set the elements back to zero.
+        Inversion of the non-singular sub-array.
         '''
-        self.nj_hamiltonian_inv = sg.copy(self.nj_hamiltonian)
-        zero_pos = []
-        for i in range(self.gs_e1_dec_dim):         
-            if self.nj_hamiltonian_inv[i,:].is_zero()  and self.nj_hamiltonian_inv[i,:].is_zero() :
-                zero_pos.append(i)
-                self.nj_hamiltonian_inv[i,i] = 1
+        self.nj_hamiltonian_inv = sp.zeros(self.nj_hamiltonian.rows,self.nj_hamiltonian.cols)
+        non_zero_pos = []
+        for i in range(self.gs_e1_dec_dim):
+            # check if row is zero
+            row = self.nj_hamiltonian[i,:]
+            row_is_zero =  row == sp.zeros(row.shape[0],row.shape[1])   
 
-        if self.MMA == True:
-            #invert with mathematica
-            m_temp = self.nj_hamiltonian_inv._mathematica_().Inverse()
-            s_temp = m_temp._sage_()
-            self.nj_hamiltonian_inv = sg.matrix(s_temp)
-            #substitute faulty E from mathematica/ does not work
-            self.nj_hamiltonian_inv = self.nj_hamiltonian_inv.subs( E =  sg.e )
-        else:
-            #invert with sagemath
-            self.nj_hamiltonian_inv = self.nj_hamiltonian_inv.inverse()
+            # check if column is zero
+            col = self.nj_hamiltonian[:,i]
+            col_is_zero =  col == sp.zeros(col.shape[0],col.shape[1])  
+            
+            if (not row_is_zero) and (not col_is_zero):
+                non_zero_pos.append(i)
 
-        #revert it back to its original form
-        for i in zero_pos:         
-            self.nj_hamiltonian_inv[i,i] = 0
+
+        non_singular_sub_array = self.nj_hamiltonian[non_zero_pos,non_zero_pos]
+        inverted_sub_array = non_singular_sub_array.LUsolve(sp.eye(non_singular_sub_array.cols))
+
+        for i,pos_i in enumerate(non_zero_pos):
+            for j,pos_j in enumerate(non_zero_pos):
+                self.nj_hamiltonian_inv[pos_i,pos_j] = inverted_sub_array[i,j]
 
 
 
@@ -441,11 +428,12 @@ class system:
         '''
         Consrtucts effective hamiltonian and eff_lindblad operators.
         '''
-        self.eff_hamiltonian = sg.copy(self.gs_hamiltonian)
-        self.eff_hamiltonian += -1/2*self.V_minus * ( self.nj_hamiltonian_inv +self.nj_hamiltonian_inv.conjugate_transpose() ) * self.V_plus
+        self.eff_hamiltonian = self.gs_hamiltonian.copy()
+        self.eff_hamiltonian += -1/2*self.V_minus * ( self.nj_hamiltonian_inv +self.nj_hamiltonian_inv.H ) * self.V_plus
+        self.eff_hamiltonian = system_functions.posify_array(self.eff_hamiltonian)
 
         #effective operator on gs
-        self.eff_hamiltonian_gs = sg.copy(self.eff_hamiltonian )
+        self.eff_hamiltonian_gs = self.eff_hamiltonian.copy()
         self.eff_hamiltonian_gs = self.eff_hamiltonian_gs[self.pos_gs,self.pos_gs]
         
         self.lindblad_list = []
@@ -453,20 +441,10 @@ class system:
         for (coeff , lindblad) in zip(self.L_coeffs ,self.Lindblad_list):
             l_reduced = system_functions.delete_from_csr( lindblad.data, row_indices=self.pos_to_del_gs_e1_dec, col_indices=self.pos_to_del_gs_e1_dec).toarray()
 
-            self.lindblad_list.append(coeff * sg.matrix( l_reduced  ))  
+            self.lindblad_list.append(coeff * sp.Matrix( l_reduced  ))  
             
-            if self.MMA == True:
-                # MMA mul does not work yet so this part is not run
-                L_op =  sg.matrix( l_reduced  )._mathematica_()
-                nj_ham_inv = self.nj_hamiltonian_inv._mathematica_()
-                V_p = self.V_plus._mathematica_()
-
-                prod = L_op.Dot( nj_ham_inv.Dot(V_p) )._sage_()
-                
-                L_eff = coeff * sg.matrix(prod)
-            else:
-                L_eff = coeff * sg.matrix( l_reduced  ) * self.nj_hamiltonian_inv * self.V_plus
-            
+            L_eff = coeff * sp.Matrix( l_reduced  ) * self.nj_hamiltonian_inv * self.V_plus
+            L_eff = system_functions.posify_array(L_eff)
             self.eff_lindblad_list.append( L_eff )
 
     

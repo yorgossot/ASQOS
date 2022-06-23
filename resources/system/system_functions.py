@@ -5,7 +5,7 @@ Functions supporting system module.
 import qutip as qt
 import numpy as np
 from scipy.sparse import csr_matrix
-import sage.all as sg
+import sympy as sp
 
 import pickle
 
@@ -87,18 +87,23 @@ def delete_from_csr(mat, row_indices=[], col_indices=[]):
     else:
         return mat
 
-
-def elementwise(operator, M, N):
+def make_into_hermitian(A):
     '''
-    SageMath elementwise operartion
-    https://ask.sagemath.org/question/10707/element-wise-operations/
+    takes a symbolic array A and returns it as a Hermitian. Does not double diagonal elements.
     '''
-    assert(M.parent() == N.parent())
-    nc, nr = M.ncols(), M.nrows()
-    A = sg.copy(M.parent().zero())
-    for r in range(nr):
-        for c in range(nc):
-            A[r,c] = operator(M[r,c], N[r,c])
-    return A
+    assert A.shape[0] == A.shape[1]
+    dim = A.shape[0]
+    ones_w_0diag = np.ones((dim,dim))
+    np.fill_diagonal(ones_w_0diag , 0)
+
+    return  A   + sp.matrix_multiply_elementwise(A , sp.Matrix(ones_w_0diag) ).H
 
 
+def posify_array(sp_array):
+    '''
+    Takes as input a sympy array and returns it in a form that assumes all variables are positive.
+    '''
+    posified_vec, posified_row_dict = sp.posify(sp_array)
+
+    result_array = (posified_vec.subs(posified_row_dict)).reshape(sp_array.rows,sp_array.cols)
+    return result_array

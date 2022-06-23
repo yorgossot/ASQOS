@@ -4,7 +4,7 @@
 
 import qutip as qt
 import numpy as np
-import sage.all as sg
+import sympy as sp
 from . import system_functions
 
 # example of component class
@@ -72,7 +72,7 @@ class cavity:
         self.gs_e1_interaction = [] 
         self.TwoPhotonResonance = True
 
-        self.L_coeffs = [sg.sqrt( sg.var("kappa_c", domain='positive' ,  latex_name =r'\kappa_c')) ]
+        self.L_coeffs = [sp.sqrt( sp.Symbol("kappa_c" )) ]
 
     def update_index(self, variable_index):
         return variable_index
@@ -83,7 +83,7 @@ class cavity:
         H = []
 
         if self.TwoPhotonResonance == False:
-            self.H_coeffs.append( sg.var("dc", domain='positive' ,  latex_name =fr'{{\delta }}_{{c}}'))
+            self.H_coeffs.append( sp.Symbol("delta_c" ))
             self.gs_e1_interaction.append(False)
             
             tensor_list = system_functions.id_operator_list(self.system_dim_list)
@@ -129,11 +129,11 @@ class fiber:
         self.excitations = np.array(['g','e'])
         self.states = np.array(['0','1']) 
         
-        self.H_coeffs = [sg.var("v", domain='positive' ,  latex_name =r'\nu'), sg.var("v")*sg.exp(sg.I*sg.var('phi', domain='positive',  latex_name =r'\phi'))]
+        self.H_coeffs = [sp.Symbol("nu"), sp.Symbol("nu")*sp.exp(sp.I*sp.Symbol('phi'))]
         self.gs_e1_interaction = [False,  False]
         self.TwoPhotonResonance = True
 
-        self.L_coeffs = [sg.sqrt( sg.var("kappa_b", domain='positive' ,  latex_name =r'\kappa_b')) ]
+        self.L_coeffs = [sp.sqrt( sp.Symbol("kappa_b" )) ]
 
     def update_index(self, variable_index):
         return variable_index
@@ -161,7 +161,7 @@ class fiber:
 
 
         if self.TwoPhotonResonance == False:
-            self.H_coeffs.append( sg.var("db", domain='positive' ,  latex_name =fr'{{\delta }}_{{b}}') )
+            self.H_coeffs.append( sp.Symbol("delta_b") )
             self.gs_e1_interaction .append( False )
             
             tensor_list = system_functions.id_operator_list(self.system_dim_list)
@@ -210,14 +210,14 @@ class ququad:
         self.excitations = np.array(['g', 'g', 'e' , 'd'])
         self.states = np.array(['0','1' , 'e' , 'o']) 
         
-        self.H_coeffs = [sg.var("De", domain='positive' ,  latex_name =r'\Delta e') , sg.var("g", domain='positive')]
+        self.H_coeffs = [sp.Symbol("Delta_e" ) , sp.Symbol("g")]
         self.gs_e1_interaction = [False , False]
         self.TwoPhotonResonance = True
 
-        self.L_coeffs = [sg.sqrt( sg.var("gamma", domain='positive' ,  latex_name =r'\gamma')) ]
+        self.L_coeffs = [sp.sqrt( sp.Symbol("gamma" )) ]
 
     def update_index(self, variable_index):
-        self.H_coeffs = [sg.var(f'De{variable_index}', domain='positive' ,  latex_name =fr'{{\Delta e}}_{{{variable_index}}}') , sg.var("g", domain='positive')]
+        self.H_coeffs = [sp.Symbol(f'Delta_e{variable_index}') , sp.Symbol("g")]
         return variable_index + 1
     
     def hamiltonian(self):
@@ -277,11 +277,11 @@ class qutrit:
         self.states = np.array(['g','f' , 'E']) 
         self.laser_bool = True    
         
-        self.H_coeffs = [sg.var("DE", domain='positive' ,  latex_name =r'\Delta E') , sg.var("Omega", domain='positive' , latex_name =r'\Omega') , sg.var("g_f", domain='positive', latex_name =r'g_f')]
+        self.H_coeffs = [sp.Symbol("Delta_E" ) , sp.Symbol("Omega" ) , sp.Symbol("g_f")]
         self.gs_e1_interaction = [False,  self.laser_bool  , False]     
         self.TwoPhotonResonance = True
 
-        self.L_coeffs = [ sg.sqrt( sg.var("gamma_f", domain='positive' ,  latex_name =r'\gamma_f')), sg.sqrt( sg.var("gamma_g", domain='positive' ,  latex_name =r'\gamma_g')) ]
+        self.L_coeffs = [ sp.sqrt( sp.Symbol("gamma_f" )), sp.sqrt( sp.Symbol("gamma_g" )) ]
 
     def update_index(self, variable_index):
         return variable_index
@@ -372,16 +372,16 @@ class quhex:
         self.excitations = np.array(['g', 'g', 'e' , 'd','e','d'])
         self.states = np.array(['0','1' , 'e' , 'o', 'X','O']) 
         
-        self.H_coeffs = [sg.var("De", domain='positive' ,  latex_name =r'\Delta e') ,sg.var("De0", domain='positive' ,  latex_name =r'\Delta e_0'), \
-             sg.var("g", domain='positive') , sg.var("g0", domain='positive',  latex_name =r'g_0') ]
+        self.H_coeffs = [sp.Symbol("Delta_e" ) ,sp.Symbol("Delta_e0" ), \
+             sp.Symbol("g") , sp.Symbol("g_0") ]
         self.gs_e1_interaction = [False , False , False , False]
         self.TwoPhotonResonance = True
 
-        self.L_coeffs = [sg.sqrt( sg.var("gamma", domain='positive' ,  latex_name =r'\gamma')) ,sg.sqrt( sg.var("gamma0", domain='positive' ,  latex_name =r'\gamma_0')) ]
+        self.L_coeffs = [sp.sqrt( sp.Symbol("gamma" )) ,sp.sqrt( sp.Symbol("gamma_0" )) ]
 
     def update_index(self, variable_index):
-        self.H_coeffs = [sg.var(f"De{variable_index}", domain='positive' ,  latex_name =r'\Delta e') ,sg.var(f"De0{variable_index}", domain='positive' ,  latex_name =r'\Delta e_0'), \
-             sg.var("g", domain='positive') , sg.var("g0", domain='positive',  latex_name =r'g_0') ]
+        self.H_coeffs = [sp.Symbol(f"Delta_e{variable_index}" ) ,sp.Symbol(f"Delta_e0{variable_index}" ), \
+             sp.Symbol("g") , sp.Symbol("g_0") ]
         return variable_index + 1
     
     def hamiltonian(self):

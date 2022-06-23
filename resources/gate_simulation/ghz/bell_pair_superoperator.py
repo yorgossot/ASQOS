@@ -1,11 +1,7 @@
-from . import gate_simulation_functions 
-import scipy.optimize 
 import numpy as np
 import qutip as qt
-import sage.all as sg
-from functools import partial
-from ...notebook_library import MMA_simplify
-import pickle
+import sympy as sp
+from . import gate_simulation_functions
 
 class Superoperator():
     '''
@@ -61,10 +57,10 @@ class Superoperator():
         self.DecPosInGsDec = np.array(self.DecPosInGsDec)                    
         
         #project the hamiltonian and the lindblads
-        self.eff_hamiltonian = sg.Matrix(sg.SR,  self.setup.eff_hamiltonian[ [k for k in GsDecPos] ,  [k for k in GsDecPos]] )
+        self.eff_hamiltonian = sp.Matrix( self.setup.eff_hamiltonian[ [k for k in GsDecPos] ,  [k for k in GsDecPos]] )
 
         for lind_op in range(self.lind_op_number ):  
-            self.eff_lind_master_eq[lind_op] = sg.Matrix(sg.SR,  self.eff_lind_master_eq[lind_op][ [k for k in GsDecPos] ,  [k for k in GsDecPos]] )
+            self.eff_lind_master_eq[lind_op] = sp.Matrix(  self.eff_lind_master_eq[lind_op][ [k for k in GsDecPos] ,  [k for k in GsDecPos]] )
 
     
     def basic_substitution(self,gamma_g_is_zero):
@@ -79,11 +75,12 @@ class Superoperator():
         else:
             params_dict = self.realistic_parameters
 
-        self.eff_hamiltonian_C =  self.eff_hamiltonian.subs(params_dict)
+        self.eff_hamiltonian_C = gate_simulation_functions.posify_array( self.eff_hamiltonian.subs(params_dict))#self.eff_hamiltonian.subs(params_dict) #
 
         self.eff_lind_master_eq_C = []
         for lind_op in range(self.lind_op_number):
-            self.eff_lind_master_eq_C.append(  self.eff_lind_master_eq[lind_op].subs(params_dict)      )
+            L_op = gate_simulation_functions.posify_array(self.eff_lind_master_eq[lind_op].subs(params_dict))#self.eff_lind_master_eq[lind_op].subs(params_dict)#gate_simulation_functions.posify_array(self.eff_lind_master_eq[lind_op].subs(params_dict))
+            self.eff_lind_master_eq_C.append(L_op)
 
 
     def simulate(self, parameter_dict ,analytical_output , gamma_g_is_zero):
@@ -97,10 +94,10 @@ class Superoperator():
         
         if analytical_output == True:
             tuning_dict = parameter_dict['tuning']
-            tuning_dict[sg.var('De0')] =  tuning_dict[sg.var('De')] - parameter_dict["hardware"][sg.var('D_max')] 
-            tuning_dict[sg.var('r1_p')] =tuning_dict[sg.var('r0_p')]
-            tuning_dict[sg.var('r1_i')] =tuning_dict[sg.var('r0_i')]
-            tuning_dict[sg.var('c')] = parameter_dict['hardware'][sg.var('c')]
+            tuning_dict[sp.Symbol('Delta_e0')] =  tuning_dict[sp.Symbol('Delta_e')] - parameter_dict["hardware"][sp.Symbol('Delta_max')] 
+            tuning_dict[sp.Symbol('r1_p')] =tuning_dict[sp.Symbol('r0_p')]
+            tuning_dict[sp.Symbol('r1_i')] =tuning_dict[sp.Symbol('r0_i')]
+            tuning_dict[sp.Symbol('c')] = parameter_dict['hardware'][sp.Symbol('c')]
         else:
             tuning_dict = parameter_dict
             
@@ -113,14 +110,17 @@ class Superoperator():
         gs_pos = self.GsPosInGsDec   
 
         # Calculate superoperator
-        eff_hamiltonian_num = self.eff_hamiltonian_C.subs(tuning_dict).expand() 
-        eff_hamiltonian_num = eff_hamiltonian_num.numpy().astype(float)
+        eff_hamiltonian_num = self.eff_hamiltonian_C.subs(tuning_dict)
+        eff_hamiltonian_num = eff_hamiltonian_num.expand()
+        eff_hamiltonian_num = sp.re(eff_hamiltonian_num)
+        eff_hamiltonian_num = np.array(eff_hamiltonian_num).astype(np.float64)
 
         H_obj = qt.Qobj(eff_hamiltonian_num)
 
         L_obj_list = []
         for lind_op in range(len(self.eff_lind_master_eq_C)):
-            L_nparray = self.eff_lind_master_eq_C[lind_op].subs(tuning_dict).expand().numpy().astype(complex)
+            L_nparray = self.eff_lind_master_eq_C[lind_op].subs(tuning_dict).expand()
+            L_nparray =  np.array(L_nparray).astype(complex)
             L_obj_list.append(qt.Qobj(L_nparray))
             
         self.L_obj_list = L_obj_list
@@ -132,7 +132,7 @@ class Superoperator():
         plus_plus_state = np.ones(4)/2
         init_state_gs = qt.Qobj(plus_plus_state)
         for i in range(2):
-            rot = tuning_dict[sg.var(f'r{i}_i')]           
+            rot = tuning_dict[sp.Symbol(f'r{i}_i')]           
             to_be_tensored = [qt.identity(2) , qt.identity(2)]
             to_be_tensored[i] = qt.qip.operations.ry(rot)
             R = qt.Qobj(qt.tensor( to_be_tensored ).full())
@@ -155,7 +155,7 @@ class Superoperator():
         H = [eff_hamiltonian_num[gs_pos[0],gs_pos[0]], eff_hamiltonian_num[gs_pos[1],gs_pos[1]]\
             ,eff_hamiltonian_num[gs_pos[2],gs_pos[2]], eff_hamiltonian_num[gs_pos[3],gs_pos[3]]]
         
-        gate_time =  np.abs( np.pi  /(H[3]+H[0]-H[1]-H[2]) ) * tuning_dict[sg.var('tgr')] 
+        gate_time =  np.abs( np.pi  /(H[3]+H[0]-H[1]-H[2]) ) * tuning_dict[sp.Symbol('tgr')] 
 
         
         if np.isposinf(gate_time) or np.isneginf(gate_time):
@@ -189,7 +189,7 @@ class Superoperator():
         standard_rot = gate_time * (H[0]-H[1])
         for i in range(2):
             to_be_tensored = [qt.identity(2),qt.identity(2)]
-            rot =  ( tuning_dict[sg.var(f'r{i}_p')]  + standard_rot   )  
+            rot =  ( tuning_dict[sp.Symbol(f'r{i}_p')]  + standard_rot   )  
             to_be_tensored[i] = qt.qip.operations.rz(rot)
             R = qt.Qobj(qt.tensor( to_be_tensored ).full())
 
