@@ -6,8 +6,32 @@ import qutip as qt
 import numpy as np
 from scipy.sparse import csr_matrix
 import sympy as sp
-
 import pickle
+import multiprocessing as mp
+import itertools
+
+
+def enumerated_together(idx : tuple , bare_matrix : sp.Matrix) \
+    ->tuple[tuple[int,int],  sp.Add | sp.Mul ] : 
+    '''
+    Enumerated version of the sympy function together(). 
+    Used for multiprocessing purposes.
+    '''
+    return idx, sp.together(bare_matrix[idx])
+
+def together_for_sympy_matrices( non_togethered_matrix : sp.Matrix , processes : int | None = None  ) -> sp.Matrix:
+    '''
+    Multiprocessed version of the sympy function together(), targeted to deal with matrix elements in parallel.
+    '''
+    n_rows , n_cols = non_togethered_matrix.shape
+    togethered_matrix = sp.Matrix.zeros(n_rows , n_cols)
+    
+    with mp.Pool(processes) as pool:
+        iterable = zip(  itertools.product( range(n_rows) , range(n_cols) ), itertools.repeat(non_togethered_matrix))
+        for idx, togethered_element in pool.starmap( enumerated_together , iterable):
+            togethered_matrix[idx] = togethered_element
+
+    return togethered_matrix
 
 
 def save_object(obj, filename):

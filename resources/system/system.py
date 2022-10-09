@@ -2,6 +2,7 @@
 # File containing system class that obtains effective hamiltonians and effective Lindblad operators.
 #
 
+from distutils import core
 from numpy.core.fromnumeric import prod
 import numpy as np
 import sympy as sp
@@ -56,10 +57,10 @@ class system:
     
     '''
  
-    def __init__(self, system_string , MMA = False , ManyVariables = False , TwoPhotonResonance = True):
+    def __init__(self, system_string , ManyVariables = False , TwoPhotonResonance = True,  cores = None):
         self.TwoPhotonResonance = TwoPhotonResonance
         self.ManyVariables = ManyVariables
-        self.MMA = MMA
+        self.cores = cores
         
         # Creation of the system comprised of the elements that make up the system.
         # Elements being o, x, O , -
@@ -415,7 +416,10 @@ class system:
 
 
         non_singular_sub_array = self.nj_hamiltonian[non_zero_pos,non_zero_pos]
-        inverted_sub_array = non_singular_sub_array.LUsolve(sp.eye(non_singular_sub_array.cols))
+        # invert
+        inverted_sub_array = non_singular_sub_array.LUsolve(sp.eye(non_singular_sub_array.cols))    
+        # simplify using together()
+        inverted_sub_array = system_functions.together_for_sympy_matrices(inverted_sub_array, processes= self.cores)
 
         for i,pos_i in enumerate(non_zero_pos):
             for j,pos_j in enumerate(non_zero_pos):
