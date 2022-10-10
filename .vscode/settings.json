@@ -1,6 +1,0 @@
-{
-    "csv-preview.capitalizeHeaders": false,
-    "csv-preview.numberFormat": "g4",
-    "csv-preview.openStdin": true,
-    "csv-preview.resizeColumns": "all"
-}
