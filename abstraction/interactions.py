@@ -30,21 +30,26 @@ class Transition():
 
 class Decay():
     @Enforcer
-    def __init__(self, energy_level_ket : EnergyLevel, energy_level_bra : EnergyLevel , coefficient ) -> None:
-        if not (hasattr(energy_level_ket, 'associated_component') and hasattr(energy_level_bra, 'associated_component')):
+    def __init__(self, excited_energy_level : EnergyLevel, decayed_energy_level : EnergyLevel , coefficient ) -> None:
+        if not (hasattr(decayed_energy_level, 'associated_component') and hasattr(excited_energy_level, 'associated_component')):
             raise Exception('Both energy levels have to be associated with a component.')
-        if energy_level_ket.associated_component != energy_level_bra.associated_component:
+        if decayed_energy_level.associated_component != excited_energy_level.associated_component:
             raise Exception('Both energy levels have to be associated with the same component.')
         if coefficient < 0 :
             raise Exception('Loss rate has to be non-negative') 
         
-        self.energy_level_ket = energy_level_ket
-        self.energy_level_bra = energy_level_bra
+        self.excited_energy_level = excited_energy_level
+        self.decayed_energy_level = decayed_energy_level
+
+        self.energy_level_ket = decayed_energy_level
+        self.energy_level_bra = excited_energy_level
         self.coefficient = sympy.sympify(coefficient)
 
-        self.name =  '|'+ energy_level_ket.name + '><' + energy_level_bra.name +'|' 
+        self.name =  '|'+ self.energy_level_ket.name + '><' + self.energy_level_bra.name +'|' 
 
-        self.associated_component = energy_level_bra.associated_component
+        # Update component and excited state
+        self.excited_energy_level.add_decayed_energy_level(self.decayed_energy_level)
+        self.associated_component = self.energy_level_bra.associated_component
         self.associated_component.add_decay(self)
     
     def __repr__(self) -> str:
@@ -52,7 +57,7 @@ class Decay():
     
     def delete(self) -> None:
         self.associated_component.delete_decay(self)
-    
+        self.excited_energy_level.delete_decayed_energy_level(self.decayed_energy_level)
 
 
 
