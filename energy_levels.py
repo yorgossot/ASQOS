@@ -39,17 +39,18 @@ class Transition():
         self.energy_level_bra = energy_level_bra
         self.coefficient = sympy.sympify(coefficient)
         
-        self.name = energy_level_ket.name + ' <-> ' + energy_level_bra.name
+        self.name = '|'+ energy_level_ket.name + '><' + energy_level_bra.name +'|'
 
         self.associated_component = energy_level_bra.associated_component
         self.associated_component.add_transition(self)
 
     def __repr__(self) -> str:
         return f"Transition {self.name} with coefficient {str(self.coefficient)} for component {self.associated_component.name}" 
-
-    def __delete__(self):
-        print('deleting')
+    
+    def delete(self)  -> None :
         self.associated_component.delete_transition(self)
+
+
 
 
 class Decay():
@@ -66,16 +67,17 @@ class Decay():
         self.energy_level_bra = energy_level_bra
         self.coefficient = sympy.sympify(coefficient)
 
-        self.name =  energy_level_ket.name + ' <~ ' + energy_level_bra.name 
+        self.name =  '|'+ energy_level_ket.name + '><' + energy_level_bra.name +'|' 
 
         self.associated_component = energy_level_bra.associated_component
         self.associated_component.add_decay(self)
     
     def __repr__(self) -> str:
-        return f"Decay {self.name} with coefficient {str(self.coefficient)} for component {self.associated_component.name}" 
+        return f"Decay: {self.name} , Coefficient: {str(self.coefficient)} , Associated component: {self.associated_component.name}" 
     
-    def __del__(self):
+    def delete(self) -> None:
         self.associated_component.delete_decay(self)
+    
 
 
 
@@ -89,6 +91,17 @@ class Coupling():
 
         self.coefficient = sympy.sympify(coefficient)
 
+        self.name = transition_a.name + transition_b.name
+
+        self.associated_component_a.add_coupling(self)
+        self.associated_component_b.add_coupling(self)
+ 
+    def __repr__(self) -> str:
+        return f"Coupling {self.name} with coefficient: {self.coefficient}"
+
+    def delete(self) -> None:
+        self.associated_component_a.delete_coupling(self)
+        self.associated_component_b.delete_coupling(self)
 
 
 
@@ -124,7 +137,14 @@ class Component():
         else:    
             self.transitions[transition.name] = transition
 
-    
+    @Enforcer
+    def delete_transition(self, transition : Transition) -> None:
+        try:    
+            del self.transitions[transition.name]
+        except KeyError:
+            raise Exception(f'Transition {transition.name} does not exist in the component {self.name}')
+
+
     @Enforcer
     def add_decay(self, decay : Decay ) -> None:
         '''
@@ -135,12 +155,6 @@ class Component():
         else:    
             self.decays[decay.name] = decay
     
-    @Enforcer
-    def delete_transition(self, transition : Transition) -> None:
-        try:    
-            del self.transitions[transition.name]
-        except KeyError:
-            raise Exception(f'Transition {transition.name} does not exist in the component {self.name}')
 
     @Enforcer
     def delete_decay(self, decay : Decay) -> None:
@@ -149,3 +163,20 @@ class Component():
         except KeyError:
             raise Exception(f'Decay {decay.name} does not exist in the component {self.name}')
 
+    @Enforcer
+    def add_coupling(self, coupling : Coupling ) -> None:
+        '''
+        Adds a decay.
+        '''
+        if coupling.name in self.couplings:
+            raise Exception(f'Coupling {coupling.name} already exists for the component {self.name}')
+        else:    
+            self.couplings[coupling.name] = coupling
+    
+
+    @Enforcer
+    def delete_coupling(self, coupling : Coupling) -> None:
+        try:    
+            del self.couplings[coupling.name]
+        except KeyError:
+            raise Exception(f'Coupling {coupling.name} does not exist in the component {self.name}')
