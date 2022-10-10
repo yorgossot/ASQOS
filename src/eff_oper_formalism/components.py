@@ -5,7 +5,7 @@
 import qutip as qt
 import numpy as np
 import sympy as sp
-from . import system_functions
+from .. import system_functions
 
 # example of component class
 '''

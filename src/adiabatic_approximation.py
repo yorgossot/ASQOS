@@ -2,38 +2,26 @@
 # File containing system class that obtains effective hamiltonians and effective Lindblad operators.
 #
 
-from distutils import core
-from numpy.core.fromnumeric import prod
+
 import numpy as np
 import sympy as sp
 from collections import Counter
 import time
-import sys
-from . import elements
+
+from .abstraction import QOpsSystem
 from . import system_functions
 
-from sympy.parsing.mathematica import mathematica
-mathematica_to_sp = {'Im':sp.im ,"Re":sp.re,"E":sp.E,"Sqrt":sp.sqrt}
 
-class system:
+
+class EffectiveOperatorFormalism():
     '''
     Class defining a system of elements.
 
-    Initialize by giving a string containing:
-    x : auxiliary atom
-    o : qubit atom
-    - : optical fiber
-
-    Borregaard et al 2015
-    2 : for 2+1 atoms
-    3 : for 3+1 atoms
     
     Corresponding state-vectors and corresponding excitations will be initialized.
 
     Extras:
 
-    MMA = True  : bool
-        Use of Mathematica to speed up 
     ManyVariables = False : bool
         Different cavities have different detunings 
     TwoPhotonResonance = True: bool
@@ -57,25 +45,15 @@ class system:
     
     '''
  
-    def __init__(self, system_string , ManyVariables = False , TwoPhotonResonance = True,  cores = None):
-        self.TwoPhotonResonance = TwoPhotonResonance
-        self.ManyVariables = ManyVariables
+    def __init__(self, q_ops_system : QOpsSystem ,  cores = None):
         self.cores = cores
-        
+        self.q_ops_system = q_ops_system
         # Creation of the system comprised of the elements that make up the system.
         # Elements being o, x, O , -
-        self.size = len(system_string)
-        self.elements = []
-        self.dim_list =[]
-        self.dim = 1  
-        dim_pos = 0
-        for ( pos , el_type ) in enumerate(system_string):
-            self.elements.append( elements.element( pos, el_type, dim_pos   ) )
-            dim_pos +=  self.elements[-1].size
-            self.dim *=  self.elements[-1].dim
-            self.dim_list.append(self.elements[-1].dim_list)
+        self.components = self.q_ops_system.components
+        self.dimensions = self.q_ops_system.dimensions
+        self.dimension =  np.prod(self.q_ops_system.dimensions)
 
-        print(f'Initializing system {system_string} ...')
         t_start = time.time()
         self.update_subelements()
         print('Constructing states and excitations ...')
@@ -98,35 +76,8 @@ class system:
 
         
         t_end = time.time()
-        print(f'\nSystem  {system_string}  initialized in {round(t_end-t_start , 1)} seconds.')
+        print(f'\nQOpsSystem {self.q_ops_system.name} effective operators in {round(t_end-t_start , 1)} seconds.')
 
-
-    def update_subelements(self):
-        '''
-        Communicate the dimension_list to all (sub)elements, potentially implement many variables and off-two photon resonance setting.
-        Many variables means that not all detunings De will be the same.
-        '''
-        flatten = lambda t: [item for sublist in t for item in sublist] #expression that flattens list
-        flattened_list = flatten(self.dim_list)
-        self.flattened_dim_list = flattened_list 
-        for elem in self.elements:
-            elem.system_dim_list = flattened_list
-            for sub_elem in elem.sub_elements:
-                sub_elem.system_dim_list = flattened_list
-        
-        #ManyVariables implementation
-        self.variable_index = 0
-        if self.ManyVariables == True:
-            self.variable_index = 1
-            for elem in self.elements:
-                for sub_elem in elem.sub_elements:
-                    self.variable_index = sub_elem.update_index(self.variable_index)
-
-        #TwoPhotonResonance implementation    
-        if self.TwoPhotonResonance == False:
-            for elem in self.elements:
-                for sub_elem in elem.sub_elements:
-                    sub_elem.TwoPhotonResonance = False
 
 
     def construct_states_and_excitations(self):
@@ -136,8 +87,8 @@ class system:
 
         For example, in o-x it will be a string of length 5 (2 cavities, 2 atoms and 1 fiber.)
         '''
-        self.excitations = ['']*self.dim
-        self.states = ['']*self.dim
+        self.excitations = ['']*self.dimension
+        self.states = ['']*self.dimension
 
         #This code does "tensor product" for characters
         excitations_list = []
@@ -147,13 +98,13 @@ class system:
                 excitations_list.append(sub_elem.excitations)
                 states_list.append(sub_elem.states)
 
-        for (i,dim) in enumerate(self.flattened_dim_list):
+        for (i,dim) in enumerate(self.dimensions):
             excitations = excitations_list[i]
             states = states_list[i]
-            above_dims = np.prod(self.flattened_dim_list[:i+1]) 
-            consecutive_elems = self.dim // above_dims  
+            above_dims = np.prod(self.dimensions[:i+1]) 
+            consecutive_elems = self.dimension // above_dims  
             k = 0
-            while k<self.dim:
+            while k< self.dim:
                 for d in range(dim):
                     for c in range(consecutive_elems):
                         self.excitations[k] += excitations[d] 

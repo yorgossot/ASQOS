@@ -41,6 +41,7 @@ def save_object(obj, filename):
     '''
     with open(f'saved_objects/{filename}.pkl', 'wb') as output:  # Overwrites any existing file.
         pickle.dump(obj, output, pickle.HIGHEST_PROTOCOL)
+
 def load_object(filename):
     '''
     Load object.
@@ -48,6 +49,9 @@ def load_object(filename):
     '''
     with open(f'saved_objects/{filename}.pkl', 'rb') as input:
         return pickle.load(input)
+
+
+
 
 def zero_operator(dim_list):
     '''
@@ -57,6 +61,7 @@ def zero_operator(dim_list):
     for i in dim_list:
         tensor_list = qt.identity(dim_list) 
     return 0*qt.tensor(tensor_list)
+
 
 def id_operator(dim_list):
     '''
@@ -113,7 +118,7 @@ def delete_from_csr(mat, row_indices=[], col_indices=[]):
 
 def make_into_hermitian(A):
     '''
-    takes a symbolic array A and returns it as a Hermitian. Does not double diagonal elements.
+    Takes a symbolic array A and returns it as a Hermitian. Does not double diagonal elements.
     '''
     assert A.shape[0] == A.shape[1]
     dim = A.shape[0]
@@ -121,13 +126,3 @@ def make_into_hermitian(A):
     np.fill_diagonal(ones_w_0diag , 0)
 
     return  A   + sp.matrix_multiply_elementwise(A , sp.Matrix(ones_w_0diag) ).H
-
-
-def posify_array(sp_array):
-    '''
-    Takes as input a sympy array and returns it in a form that assumes all variables are positive.
-    '''
-    posified_vec, posified_row_dict = sp.posify(sp_array)
-
-    result_array = (posified_vec.subs(posified_row_dict)).reshape(sp_array.rows,sp_array.cols)
-    return result_array

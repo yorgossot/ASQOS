@@ -1,5 +1,5 @@
 from type_enforced import Enforcer
-from .interactions import Transition, Decay, Coupling
+from .interactions import Transition, Decay, Coupling, Rabi
 from .energy_level import EnergyLevel
 
 class Component():
@@ -13,39 +13,37 @@ class Component():
         self.energy_levels = {}
         for energy_level in energy_levels:
             assert isinstance(energy_level,EnergyLevel)
-            energy_level.associate_with_component(self)
+            energy_level._associate_with_component(self)
             self.energy_levels[energy_level.name] = energy_level
-             
-        self.transitions = {}
+        
+        self.dimension = len(energy_levels)
+
+        self.rabis = {}
         self.decays = {}
         self.couplings = {}
 
         self.coupled_components = {}
+
+        self.associated_system = None
+        self.position_in_system = None
 
       
     def __repr__(self) -> str:
         return f'Component {self.name} with {len(self.energy_levels)} energy levels'
 
     @Enforcer
-    def add_transition(self, transition : Transition) -> None:
+    def _add_rabi(self, rabi : Rabi) -> None:
         '''
         Adds an interaction with its complex conjugate.
         '''
-        if transition.name in self.transitions:
-            raise Exception(f'Decay {transition.name} already exists for the component {self.name}')
+        if rabi.name in self.rabis:
+            raise Exception(f'Rabi {rabi.name} already exists for the component {self.name}')
         else:    
-            self.transitions[transition.name] = transition
-
-    @Enforcer
-    def delete_transition(self, transition : Transition) -> None:
-        try:    
-            del self.transitions[transition.name]
-        except KeyError:
-            raise Exception(f'Transition {transition.name} does not exist in the component {self.name}')
+            self.rabis[rabi.name] = rabi
 
 
     @Enforcer
-    def add_decay(self, decay : Decay ) -> None:
+    def _add_decay(self, decay : Decay ) -> None:
         '''
         Adds a decay.
         '''
@@ -56,14 +54,7 @@ class Component():
     
 
     @Enforcer
-    def delete_decay(self, decay : Decay) -> None:
-        try:    
-            del self.decays[decay.name]
-        except KeyError:
-            raise Exception(f'Decay {decay.name} does not exist in the component {self.name}')
-
-    @Enforcer
-    def add_coupling(self, coupling : Coupling ) -> None:
+    def _add_coupling(self, coupling : Coupling ) -> None:
         '''
         Adds a decay.
         '''
@@ -71,16 +62,9 @@ class Component():
             raise Exception(f'Coupling {coupling.name} already exists for the component {self.name}')
         else:    
             self.couplings[coupling.name] = coupling
+
     
-
-    @Enforcer
-    def delete_coupling(self, coupling : Coupling) -> None:
-        try:    
-            del self.couplings[coupling.name]
-        except KeyError:
-            raise Exception(f'Coupling {coupling.name} does not exist in the component {self.name}')
-
-    def update_coupled_components(self) -> None:
+    def _update_coupled_components(self) -> None:
         # Access all couplings
         for coupling in self.couplings.values():
             # Access the two components of the coupling
@@ -89,5 +73,33 @@ class Component():
                 if (component != self ) and ( component.name not in self.coupled_components):
                     # Add to the dictionary of coupled components
                     self.coupled_components[component.name] = component
+    
+    @Enforcer
+    def _associate_with_q_op_system(self, q_op_system, position_in_system : int) -> None:
+        from .q_op_system import QOpsSystem
+        assert isinstance(q_op_system,QOpsSystem)
+        assert position_in_system >= 0
 
-            
+        self.associated_system = q_op_system
+        self.position_in_system = position_in_system
+
+
+    # @Enforcer
+    # def delete_rabi(self, rabi : Rabi) -> None:
+    #     try:    
+    #         del self.rabis[rabi.name]
+    #     except KeyError:
+    #         raise Exception(f'Rabi {rabi.name} does not exist in the component {self.name}')
+
+    # @Enforcer
+    # def delete_coupling(self, coupling : Coupling) -> None:
+    #     try:    
+    #         del self.couplings[coupling.name]
+    #     except KeyError:
+    #         raise Exception(f'Coupling {coupling.name} does not exist in the component {self.name}')
+    # @Enforcer
+    # def delete_rabi(self, decay : Decay) -> None:
+    #     try:    
+    #         del self.decays[decay.name]
+    #     except KeyError:
+    #         raise Exception(f'Decay {decay.name} does not exist in the component {self.name}')
