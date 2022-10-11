@@ -1,3 +1,4 @@
+from typing import OrderedDict
 from type_enforced import Enforcer
 from .interactions import Transition, Decay, Coupling, Rabi
 from .energy_level import EnergyLevel
@@ -10,7 +11,7 @@ class Component():
         assert isinstance(name,str)
 
         self.name = name
-        self.energy_levels = {}
+        self.energy_levels = OrderedDict()
         for energy_level in energy_levels:
             assert isinstance(energy_level,EnergyLevel)
             energy_level._associate_with_component(self)
@@ -62,6 +63,12 @@ class Component():
             raise Exception(f'Coupling {coupling.name} already exists for the component {self.name}')
         else:    
             self.couplings[coupling.name] = coupling
+
+    def _update_associated_energy_level_excitation_statuses(self) -> None :
+        
+        for energy_level_name in self.energy_levels:
+            # Update excitation status of enegy level
+            self.energy_levels[energy_level_name]._update_excitation_status()
 
     
     def _update_coupled_components(self) -> None:

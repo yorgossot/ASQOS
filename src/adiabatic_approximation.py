@@ -15,33 +15,6 @@ from . import system_functions
 
 class EffectiveOperatorFormalism():
     '''
-    Class defining a system of elements.
-
-    
-    Corresponding state-vectors and corresponding excitations will be initialized.
-
-    Extras:
-
-    ManyVariables = False : bool
-        Different cavities have different detunings 
-    TwoPhotonResonance = True: bool
-        Cavities are on two photon resonance
-
-    ...
-
-    Attributes
-    ----------
-    size : int
-        Number of elements
-    dim : int
-        Total dimension of the system. 
-    elements: list 
-        List of all element objects.
-    dim_list: list
-        List with every dimension_list  of every element.
-    flattened_dim_list : list
-        List of all dimensions
-    
     
     '''
  
@@ -55,24 +28,23 @@ class EffectiveOperatorFormalism():
         self.dimension =  np.prod(self.q_ops_system.dimensions)
 
         t_start = time.time()
-        self.update_subelements()
         print('Constructing states and excitations ...')
         self.construct_states_and_excitations()
         print('Constructing ground and first-excited statespace ...')
         self.construct_gs_e1_dec_subspace()
-        self.obtain_energy_info()    
-        print('Constructing gs_hamiltonian ...')  
-        self.construct_gs_hamiltonian()
-        print('Constructing e1_hamiltonian ...') 
-        self.construct_e1_hamiltonian()
-        print('Constructing interactions V_plus and V_minus ...')
-        self.construct_V()
-        print('Constructing NJ_hamiltonian ...')        
-        self.construct_nj_hamiltonian()
-        print('Inverting NJ_hamiltonian ...') 
-        self.construct_nj_hamiltonian_inverse()
-        print('Constructing eff_hamiltonian and effective lindblad operators ...')   
-        self.construct_eff_hamiltonian_lindblads()
+        # self.obtain_energy_info()    
+        # print('Constructing gs_hamiltonian ...')  
+        # self.construct_gs_hamiltonian()
+        # print('Constructing e1_hamiltonian ...') 
+        # self.construct_e1_hamiltonian()
+        # print('Constructing interactions V_plus and V_minus ...')
+        # self.construct_V()
+        # print('Constructing NJ_hamiltonian ...')        
+        # self.construct_nj_hamiltonian()
+        # print('Inverting NJ_hamiltonian ...') 
+        # self.construct_nj_hamiltonian_inverse()
+        # print('Constructing eff_hamiltonian and effective lindblad operators ...')   
+        # self.construct_eff_hamiltonian_lindblads()
 
         
         t_end = time.time()
@@ -93,10 +65,12 @@ class EffectiveOperatorFormalism():
         #This code does "tensor product" for characters
         excitations_list = []
         states_list = []
-        for elem in self.elements:
-            for sub_elem in elem.sub_elements:
-                excitations_list.append(sub_elem.excitations)
-                states_list.append(sub_elem.states)
+        for component in self.components.values():
+            excitations_list.append([])
+            states_list.append([])
+            for energy_level in component.energy_levels.values():
+                excitations_list[-1].append(energy_level.excitation_status)
+                states_list[-1].append(energy_level.name)
 
         for (i,dim) in enumerate(self.dimensions):
             excitations = excitations_list[i]
@@ -104,14 +78,18 @@ class EffectiveOperatorFormalism():
             above_dims = np.prod(self.dimensions[:i+1]) 
             consecutive_elems = self.dimension // above_dims  
             k = 0
-            while k< self.dim:
+            while k<self.dimension:
                 for d in range(dim):
-                    for c in range(consecutive_elems):
-                        self.excitations[k] += excitations[d] 
-                        self.states[k] += states[d] 
+                    for _ in range(consecutive_elems):
+                        self.excitations[k] += '|'+ excitations[d]
+                        self.states[k] += '|'+ states[d]
                         k = k + 1
-
+        
+        for d in range(self.dimension):
+            self.excitations[d] += '|'
+            self.states[d] += '|'
                 
+
     def construct_gs_e1_dec_subspace(self):
         '''
         Constructs: 
@@ -133,24 +111,14 @@ class EffectiveOperatorFormalism():
         self.pos_to_del_gs_e1_dec = []
         for (i , excitation ) in enumerate(self.excitations) :
             letter_count = Counter(excitation)
-            g_count = letter_count['g'] #0/1 states
-            q_count = letter_count['q'] #g states
-            e_count = letter_count['e'] #e/E states
-            p_count = letter_count['p'] #f states
-            d_count = letter_count['d'] #o states
+            d_count = letter_count['D'] # number of decayed states
+            e_count = letter_count['E'] # number of excited states
 
-            gs_del_flag = False
-            if e_count!=0 or p_count!=0 or d_count!=0: gs_del_flag = True  #no excitation/no f state/no decay/
-            e1_del_flag = False
-            if e_count!=1 or q_count!=0 or d_count!=0: e1_del_flag = True  #1 exc /no g state/no decay  
-            dec_del_flag = False
-            if e_count!=0 or q_count!=0 or d_count>1: dec_del_flag = True  #0 exc /no g state/ 1 or 0 decay  
-
-            if e1_del_flag and gs_del_flag and dec_del_flag:
+            if d_count + e_count > 1:
                 self.pos_to_del_gs_e1_dec.append(i)
         
         #self.pos_gs_e1_dec = [i for i in [*range(self.dim)] if i not in self.pos_to_del_gs_e1_dec]   #DELETED DUE TO IT BEING TOO SLOW
-        self.gs_e1_dec_dim = self.dim - len(self.pos_to_del_gs_e1_dec)
+        self.gs_e1_dec_dim = self.dimension- len(self.pos_to_del_gs_e1_dec)
         self.gs_e1_dec_excitations = np.delete(self.excitations , self.pos_to_del_gs_e1_dec)
         self.gs_e1_dec_states = np.delete(self.states , self.pos_to_del_gs_e1_dec)
 
@@ -160,15 +128,12 @@ class EffectiveOperatorFormalism():
         self.pos_to_del_gs = []
         for (i , excitation ) in enumerate(self.gs_e1_dec_excitations) :            
             letter_count = Counter(excitation)
-            e_count = letter_count['e'] #e/E states
-            p_count = letter_count['p'] #f states
-            d_count = letter_count['d'] #o states
-          
-            gs_del_flag = False
-            if e_count!=0 or p_count!=0 or d_count!=0: gs_del_flag = True  #no excitation/no f state/no decay/
-
-            if  gs_del_flag :
+            d_count = letter_count['D'] # number of decayed states
+            e_count = letter_count['E'] # number of excited states
+            
+            if  e_count + d_count > 0 :
                 self.pos_to_del_gs.append(i)
+        
         self.pos_to_del_gs = list(dict.fromkeys(self.pos_to_del_gs)) #remove duplicates
         
         self.gs_dim = self.gs_e1_dec_dim - len(self.pos_to_del_gs)
@@ -185,16 +150,11 @@ class EffectiveOperatorFormalism():
         self.pos_to_del_e1 = []
         for (i , excitation ) in enumerate(self.gs_e1_dec_excitations) : 
             letter_count = Counter(excitation)
-            q_count = letter_count['q'] #g states
-            e_count = letter_count['e'] #e/E states
-            d_count = letter_count['d'] #o states
+            e_count = letter_count['E'] # number of excited states
 
-            e1_del_flag = False
-            if e_count!=1 or q_count!=0 or d_count!=0: e1_del_flag = True  #1 exc /no g state/no decay  
- 
-
-            if e1_del_flag :
+            if e_count == 1 :
                 self.pos_to_del_e1.append(i)
+
         self.pos_to_del_e1 = list(dict.fromkeys(self.pos_to_del_e1)) #remove duplicates
         
         self.e1_dim = self.gs_e1_dec_dim - len(self.pos_to_del_e1)  
@@ -209,15 +169,11 @@ class EffectiveOperatorFormalism():
         self.pos_to_del_dec = []
         for (i , excitation ) in enumerate(self.gs_e1_dec_excitations) : 
             letter_count = Counter(excitation)
-            q_count = letter_count['q'] #g states
-            e_count = letter_count['e'] #e/E states
-            d_count = letter_count['d'] #o states
+            d_count = letter_count['D'] # number of decayed states
 
-            dec_del_flag = False
-            if e_count!=0 or q_count!=0 or d_count>1: dec_del_flag = True  #0 exc /no g state/ 1 or 0 decay  
-
-            if  dec_del_flag:
+            if  d_count == 1:
                 self.pos_to_del_dec.append(i)
+        
         self.pos_to_del_dec = list(dict.fromkeys(self.pos_to_del_dec)) #remove duplicates
         
         self.dec_dim = self.gs_e1_dec_dim - len(self.pos_to_del_dec)  

@@ -1,5 +1,6 @@
 from type_enforced import Enforcer
 from collections import OrderedDict
+from numpy import prod
 
 from .component import Component
 
@@ -29,6 +30,7 @@ class QOpsSystem():
 
     def compile(self) -> None :
         new_components = OrderedDict()
+        
         # Access all components
         for component in self.components.values():
             # Update coupled component list
@@ -46,6 +48,13 @@ class QOpsSystem():
             self.dimensions.append(component.dimension)
             # Associate the component with the system and its position in the system
             component._associate_with_q_op_system(self, position_in_system)
+        
+        self.dimension = prod(self.dimensions)
+
+        # Update excitation status
+        for component in self.components.values():
+            component._update_associated_energy_level_excitation_statuses()
+
 
         # Note that it has been compiled
         self.compiled = True

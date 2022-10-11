@@ -19,10 +19,26 @@ class EnergyLevel():
         self.coupled_energy_levels = {}
 
     def __repr__(self) -> str:
-        return f"Energy Level {str(self.name)} with energy E={str(self.energy)}, Stable = {self.stable}" 
+        return f"Energy Level {str(self.name)} with energy E={str(self.energy)}" 
     
     
     def _update_excitation_status(self) -> None:
+        """
+        Updates the excitation status of the energy level
+        according to the number of decayed, coupled and rabi levels.
+        The excitation status attribute will be set as:
+        - `'E'` if the state is excited and can decay
+        - `'R'` elif it is involved in a Rabi transition
+        - `'C'` elif it is involved in a Coupling
+        
+        Parameters
+        ----------
+        self : EnergyLevel
+
+        Returns
+        -------
+        None
+        """
         if len(self.decayed_energy_levels) > 0:
             self.excitation_status = 'E'
         else:
