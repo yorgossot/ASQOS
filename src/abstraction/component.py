@@ -12,10 +12,14 @@ class Component():
 
         self.name = name
         self.energy_levels = OrderedDict()
-        for energy_level in energy_levels:
+        for idx ,energy_level in enumerate(energy_levels):
             assert isinstance(energy_level,EnergyLevel)
+            
             energy_level._associate_with_component(self)
+            energy_level.index_in_component = idx
+
             self.energy_levels[energy_level.name] = energy_level
+            
         
         self.dimension = len(energy_levels)
 
@@ -26,7 +30,7 @@ class Component():
         self.coupled_components = {}
 
         self.associated_system = None
-        self.position_in_system = None
+        self.index_in_system = None
 
       
     def __repr__(self) -> str:
@@ -64,6 +68,7 @@ class Component():
         else:    
             self.couplings[coupling.name] = coupling
 
+    
     def _update_associated_energy_level_excitation_statuses(self) -> None :
         
         for energy_level_name in self.energy_levels:
@@ -82,13 +87,14 @@ class Component():
                     self.coupled_components[component.name] = component
     
     @Enforcer
-    def _associate_with_q_op_system(self, q_op_system, position_in_system : int) -> None:
-        from .q_op_system import QOpsSystem
+    def _associate_with_q_op_system(self, q_op_system, index_in_system : int) -> None:
+        from .q_ops_system import QOpsSystem
         assert isinstance(q_op_system,QOpsSystem)
-        assert position_in_system >= 0
+        assert index_in_system >= 0
 
         self.associated_system = q_op_system
-        self.position_in_system = position_in_system
+        self.index_in_system = index_in_system
+
 
 
     # @Enforcer

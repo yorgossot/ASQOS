@@ -13,9 +13,11 @@ class EnergyLevel():
         self.energy = sympy.sympify(energy)
     
         self.excitation_status =  None
+        self.index_in_component = None
         
         self.rabi_energy_levels = {}
         self.decayed_energy_levels = {}
+        self.decaying_energy_levels = {}
         self.coupled_energy_levels = {}
 
     def __repr__(self) -> str:
@@ -30,6 +32,8 @@ class EnergyLevel():
         - `'E'` if the state is excited and can decay
         - `'R'` elif it is involved in a Rabi transition
         - `'C'` elif it is involved in a Coupling
+        - `'D'` elif it is a decayed state
+        - `'N'` else (non-participating in any interaction)
         
         Parameters
         ----------
@@ -41,13 +45,14 @@ class EnergyLevel():
         """
         if len(self.decayed_energy_levels) > 0:
             self.excitation_status = 'E'
+        elif len(self.rabi_energy_levels) > 0:
+            self.excitation_status = 'R'
+        elif len(self.coupled_energy_levels) > 0:
+            self.excitation_status = 'C'
+        elif len(self.decaying_energy_levels):
+            self.excitation_status = 'D'
         else:
-            if len(self.rabi_energy_levels) > 0:
-                self.excitation_status = 'R'
-            elif len(self.coupled_energy_levels) > 0:
-                self.excitation_status = 'C'
-            else:
-                self.excitation_status = 'D'
+            self.excitation_status = 'N'
             
 
 
@@ -69,9 +74,23 @@ class EnergyLevel():
         
         self.rabi_energy_levels[rabi_energy_level.name] = rabi_energy_level
 
+    
+
+    def _add_decaying_energy_level(self, decaying_energy_level )-> None:
+        '''
+        Adds an energy level that decays into instance of energy level.
+        '''
+        assert isinstance(decaying_energy_level, EnergyLevel)
+        assert decaying_energy_level != self
+        assert decaying_energy_level.associated_component == self.associated_component
+
+        self.decaying_energy_levels[decaying_energy_level.name] = decaying_energy_level
+
 
     def _add_decayed_energy_level(self, decayed_energy_level )-> None:
-        
+        '''
+        Adds an energy level the instance can decay into.
+        '''
         assert isinstance(decayed_energy_level, EnergyLevel)
         assert decayed_energy_level != self
         assert decayed_energy_level.associated_component == self.associated_component

@@ -1,3 +1,0 @@
-*.psd filter=lfs diff=lfs merge=lfs -text
-saved_objects/o-o-x-o-.pkl filter=lfs diff=lfs merge=lfs -text
-saved_objects/** filter=lfs diff=lfs merge=lfs -text

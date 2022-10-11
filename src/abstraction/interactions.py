@@ -18,11 +18,13 @@ class Transition():
 
         self.associated_component = energy_level_bra.associated_component
     
-    # def delete(self)  -> None :
-    #     pass
-
 
 class Rabi(Transition):
+    '''
+    Rabi transition. Give as energy_level_ket the excited state.
+
+    TODO: Implement classification of Rabi transitions into exciting.
+    '''
     @Enforcer
     def __init__(self, energy_level_ket: EnergyLevel, energy_level_bra: EnergyLevel, coefficient) -> None:
         super().__init__(energy_level_ket, energy_level_bra)
@@ -38,9 +40,6 @@ class Rabi(Transition):
     def __repr__(self) -> str:
         return f"Decay: {self.name} , Coefficient: {str(self.coefficient)} , Associated component: {self.associated_component.name}" 
     
-    # def delete(self) -> None:
-    #     self.associated_component.delete_rabi(self)
-    #     self.excited_energy_level.delete_rabi_energy_level(self.decayed_energy_level)
 
 
 class Decay(Transition):
@@ -60,6 +59,7 @@ class Decay(Transition):
 
         # Update component and excited state
         self.excited_energy_level._add_decayed_energy_level(self.decayed_energy_level)
+        self.decayed_energy_level._add_decaying_energy_level(self.excited_energy_level)
         self.associated_component._add_decay(self)
     
     def __repr__(self) -> str:

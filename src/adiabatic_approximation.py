@@ -2,14 +2,13 @@
 # File containing system class that obtains effective hamiltonians and effective Lindblad operators.
 #
 
-
-import numpy as np
-import sympy as sp
+import numpy 
+import sympy 
 from collections import Counter
 import time
 
 from .abstraction import QOpsSystem
-from . import system_functions
+from . import q_ops_utilities
 
 
 
@@ -25,26 +24,26 @@ class EffectiveOperatorFormalism():
         # Elements being o, x, O , -
         self.components = self.q_ops_system.components
         self.dimensions = self.q_ops_system.dimensions
-        self.dimension =  np.prod(self.q_ops_system.dimensions)
+        self.dimension =  numpy.prod(self.q_ops_system.dimensions)
 
         t_start = time.time()
         print('Constructing states and excitations ...')
         self.construct_states_and_excitations()
         print('Constructing ground and first-excited statespace ...')
         self.construct_gs_e1_dec_subspace()
-        # self.obtain_energy_info()    
-        # print('Constructing gs_hamiltonian ...')  
-        # self.construct_gs_hamiltonian()
-        # print('Constructing e1_hamiltonian ...') 
-        # self.construct_e1_hamiltonian()
-        # print('Constructing interactions V_plus and V_minus ...')
-        # self.construct_V()
-        # print('Constructing NJ_hamiltonian ...')        
-        # self.construct_nj_hamiltonian()
-        # print('Inverting NJ_hamiltonian ...') 
-        # self.construct_nj_hamiltonian_inverse()
-        # print('Constructing eff_hamiltonian and effective lindblad operators ...')   
-        # self.construct_eff_hamiltonian_lindblads()
+        self.obtain_energy_info()    
+        print('Constructing gs_hamiltonian ...')  
+        self.construct_gs_hamiltonian()
+        print('Constructing e1_hamiltonian ...') 
+        self.construct_e1_hamiltonian()
+        print('Constructing interactions V_plus and V_minus ...')
+        self.construct_V()
+        print('Constructing NJ_hamiltonian ...')        
+        self.construct_nj_hamiltonian()
+        print('Inverting NJ_hamiltonian ...') 
+        self.construct_nj_hamiltonian_inverse()
+        print('Constructing eff_hamiltonian and effective lindblad operators ...')   
+        self.construct_eff_hamiltonian_lindblads()
 
         
         t_end = time.time()
@@ -75,7 +74,7 @@ class EffectiveOperatorFormalism():
         for (i,dim) in enumerate(self.dimensions):
             excitations = excitations_list[i]
             states = states_list[i]
-            above_dims = np.prod(self.dimensions[:i+1]) 
+            above_dims = numpy.prod(self.dimensions[:i+1]) 
             consecutive_elems = self.dimension // above_dims  
             k = 0
             while k<self.dimension:
@@ -119,8 +118,8 @@ class EffectiveOperatorFormalism():
         
         #self.pos_gs_e1_dec = [i for i in [*range(self.dim)] if i not in self.pos_to_del_gs_e1_dec]   #DELETED DUE TO IT BEING TOO SLOW
         self.gs_e1_dec_dim = self.dimension- len(self.pos_to_del_gs_e1_dec)
-        self.gs_e1_dec_excitations = np.delete(self.excitations , self.pos_to_del_gs_e1_dec)
-        self.gs_e1_dec_states = np.delete(self.states , self.pos_to_del_gs_e1_dec)
+        self.gs_e1_dec_excitations = numpy.delete(self.excitations , self.pos_to_del_gs_e1_dec)
+        self.gs_e1_dec_states = numpy.delete(self.states , self.pos_to_del_gs_e1_dec)
 
 
         # gs_hamiltonian states and positions in gs_e1_dec subspace
@@ -141,8 +140,8 @@ class EffectiveOperatorFormalism():
         self.pos_gs = [i for i in [*range(self.gs_e1_dec_dim )] if i not in self.pos_to_del_gs]  #all positions that contain gs in gs_e1_dec
 
                 
-        self.gs_states = np.delete(self.gs_e1_dec_states, self.pos_to_del_gs )
-        self.gs_excitations = np.delete(self.gs_e1_dec_excitations, self.pos_to_del_gs )
+        self.gs_states = numpy.delete(self.gs_e1_dec_states, self.pos_to_del_gs )
+        self.gs_excitations = numpy.delete(self.gs_e1_dec_excitations, self.pos_to_del_gs )
 
 
         # e1_hamiltonian states and positions in gs_e1_dec subspace
@@ -152,7 +151,7 @@ class EffectiveOperatorFormalism():
             letter_count = Counter(excitation)
             e_count = letter_count['E'] # number of excited states
 
-            if e_count == 1 :
+            if e_count != 1 :
                 self.pos_to_del_e1.append(i)
 
         self.pos_to_del_e1 = list(dict.fromkeys(self.pos_to_del_e1)) #remove duplicates
@@ -161,8 +160,8 @@ class EffectiveOperatorFormalism():
 
         self.pos_e1 = [i for i in [*range(self.gs_e1_dec_dim )] if i not in self.pos_to_del_e1]  #all positions that contain e1 in gs_e1_dec
 
-        self.e1_states = np.delete(self.gs_e1_dec_states, self.pos_to_del_e1 )
-        self.e1_excitations = np.delete(self.gs_e1_dec_excitations, self.pos_to_del_e1 )
+        self.e1_states = numpy.delete(self.gs_e1_dec_states, self.pos_to_del_e1 )
+        self.e1_excitations = numpy.delete(self.gs_e1_dec_excitations, self.pos_to_del_e1 )
       
 
         #dec states in the subspace
@@ -171,7 +170,7 @@ class EffectiveOperatorFormalism():
             letter_count = Counter(excitation)
             d_count = letter_count['D'] # number of decayed states
 
-            if  d_count == 1:
+            if  d_count != 1:
                 self.pos_to_del_dec.append(i)
         
         self.pos_to_del_dec = list(dict.fromkeys(self.pos_to_del_dec)) #remove duplicates
@@ -180,8 +179,8 @@ class EffectiveOperatorFormalism():
 
         self.pos_dec = [i for i in [*range(self.gs_e1_dec_dim )] if i not in self.pos_to_del_dec]  #all positions that contain dec in gs_e1_dec
 
-        self.dec_states = np.delete(self.gs_e1_dec_states, self.pos_to_del_dec )
-        self.dec_excitations = np.delete(self.gs_e1_dec_excitations, self.pos_to_del_dec )
+        self.dec_states = numpy.delete(self.gs_e1_dec_states, self.pos_to_del_dec )
+        self.dec_excitations = numpy.delete(self.gs_e1_dec_excitations, self.pos_to_del_dec )
 
 
 
@@ -198,20 +197,32 @@ class EffectiveOperatorFormalism():
         self.Lindblad_list = []
         self.L_coeffs = []
         
-        for elem in self.elements:
-            for sub_elem in elem.sub_elements:
-                
-                h = sub_elem.hamiltonian()             
-                for (i,h_el) in enumerate(h):
-                    self.H_list.append(h[i])
-                    self.H_coeffs.append(sub_elem.H_coeffs[i])
-                    self.gs_e1_dec_int.append(sub_elem.gs_e1_interaction[i])
+        for rabi in self.q_ops_system.hamiltonian['rabis'].values():
+            qobj = rabi['Qobj']
+            coefficient = rabi['coefficient']
+            self.H_list.append(qobj)
+            self.H_coeffs.append(coefficient)
+            self.gs_e1_dec_int.append(True)
+        
+        for energy_level in self.q_ops_system.hamiltonian['energy_levels'].values():
+            qobj = energy_level['Qobj']
+            coefficient = energy_level['coefficient']
+            self.H_list.append(qobj)
+            self.H_coeffs.append(coefficient)
+            self.gs_e1_dec_int.append(False)
+        
+        for coupling in self.q_ops_system.hamiltonian['couplings'].values():
+            qobj = coupling['Qobj']
+            coefficient = coupling['coefficient']
+            self.H_list.append(qobj)
+            self.H_coeffs.append(coefficient)
+            self.gs_e1_dec_int.append(False)
 
-
-                lind = sub_elem.lindblad() 
-                for (i,l_el) in enumerate(lind):
-                    self.Lindblad_list.append(lind[i])
-                    self.L_coeffs.append(sub_elem.L_coeffs[i])
+        for decay in self.q_ops_system.lindblads.values():
+            qobj = decay['Qobj']
+            coefficient = decay['coefficient']
+            self.Lindblad_list.append(qobj)
+            self.L_coeffs.append(coefficient)
         
         self.number_of_lindblads = len(self.Lindblad_list)
 
@@ -223,21 +234,21 @@ class EffectiveOperatorFormalism():
 
         Note that the gs_hamiltonian will be a sage matrix and not a qt object.
         '''
-        self.gs_hamiltonian = np.zeros((self.gs_e1_dec_dim,self.gs_e1_dec_dim) , dtype = 'complex128')
+        self.gs_hamiltonian = numpy.zeros((self.gs_e1_dec_dim,self.gs_e1_dec_dim) , dtype = 'complex128')
 
-        self.gs_hamiltonian = sp.Matrix(self.gs_hamiltonian )
+        self.gs_hamiltonian = sympy.Matrix(self.gs_hamiltonian )
 
         for (coeff , h) in zip(self.H_coeffs,self.H_list):
-            h_reduced = system_functions.delete_from_csr( h.data, row_indices=self.pos_to_del_gs_e1_dec, col_indices=self.pos_to_del_gs_e1_dec).toarray() 
+            h_reduced = q_ops_utilities.delete_from_csr( h.data, row_indices=self.pos_to_del_gs_e1_dec, col_indices=self.pos_to_del_gs_e1_dec).toarray() 
             h_reduced[self.pos_e1, :]  = 0
             h_reduced[: , self.pos_e1] = 0
             h_reduced[self.pos_dec, :]  = 0
             h_reduced[: , self.pos_dec] = 0
-            self.gs_hamiltonian = self.gs_hamiltonian + coeff * sp.Matrix(h_reduced)
+            self.gs_hamiltonian = self.gs_hamiltonian + coeff * sympy.Matrix(h_reduced)
         
         # Because hamiltonians are created without the complex conjugate, we have to add the complex conjugate (if it is not diagonal).
         # The routine below takes care of it.
-        self.gs_hamiltonian = system_functions.make_into_hermitian(self.gs_hamiltonian)
+        self.gs_hamiltonian = q_ops_utilities.make_into_hermitian(self.gs_hamiltonian)
 
 
 
@@ -249,18 +260,18 @@ class EffectiveOperatorFormalism():
         Note that the e1_hamiltonian will be a sage matrix and not a qt object.
         '''
         
-        self.e1_hamiltonian = sp.Matrix ( np.zeros((self.gs_e1_dec_dim,self.gs_e1_dec_dim), dtype = 'complex128') )
+        self.e1_hamiltonian = sympy.Matrix ( numpy.zeros((self.gs_e1_dec_dim,self.gs_e1_dec_dim), dtype = 'complex128') )
         for (coeff , h) in zip(self.H_coeffs,self.H_list):
-            h_reduced = system_functions.delete_from_csr( h.data, row_indices=self.pos_to_del_gs_e1_dec, col_indices=self.pos_to_del_gs_e1_dec).toarray()
+            h_reduced = q_ops_utilities.delete_from_csr( h.data, row_indices=self.pos_to_del_gs_e1_dec, col_indices=self.pos_to_del_gs_e1_dec).toarray()
             h_reduced[self.pos_gs, :]  = 0
             h_reduced[: , self.pos_gs] = 0
             h_reduced[self.pos_dec, :]  = 0
             h_reduced[: , self.pos_dec] = 0       
-            self.e1_hamiltonian += coeff * sp.Matrix( h_reduced  )     
+            self.e1_hamiltonian += coeff * sympy.Matrix( h_reduced  )     
 
         # Because hamiltonians are created without the complex conjugate, we have to add the complex conjugate (if it is not diagonal).
         # The routine below takes care of it.
-        self.e1_hamiltonian = system_functions.make_into_hermitian(self.e1_hamiltonian)
+        self.e1_hamiltonian = q_ops_utilities.make_into_hermitian(self.e1_hamiltonian)
 
 
 
@@ -271,12 +282,12 @@ class EffectiveOperatorFormalism():
         Note that the V_plus and V_minus will be a sage matrix and not qt objects.
         '''
 
-        self.V_plus = sp.zeros(self.gs_e1_dec_dim,self.gs_e1_dec_dim  ) 
+        self.V_plus = sympy.zeros(self.gs_e1_dec_dim,self.gs_e1_dec_dim  ) 
 
         for (coeff , h , gs_e1_interaction) in zip(self.H_coeffs,self.H_list , self.gs_e1_dec_int):
             if gs_e1_interaction:
-                h_reduced = system_functions.delete_from_csr( h.data, row_indices=self.pos_to_del_gs_e1_dec, col_indices=self.pos_to_del_gs_e1_dec).toarray()
-                self.V_plus += coeff * sp.Matrix(h_reduced)
+                h_reduced = q_ops_utilities.delete_from_csr( h.data, row_indices=self.pos_to_del_gs_e1_dec, col_indices=self.pos_to_del_gs_e1_dec).toarray()
+                self.V_plus += coeff * sympy.Matrix(h_reduced)
 
         
         self.V_minus = self.V_plus.H
@@ -288,15 +299,15 @@ class EffectiveOperatorFormalism():
         Constructs the no-jump Hamiltonian from the excited hamiltonian and the lindblad operators.
         '''
 
-        self.L_sum =  sp.zeros( self.gs_e1_dec_dim,self.gs_e1_dec_dim  ) 
+        self.L_sum =  sympy.zeros( self.gs_e1_dec_dim,self.gs_e1_dec_dim  ) 
 
         for (coeff , lindblad) in zip(self.L_coeffs ,self.Lindblad_list):
-            l_reduced = system_functions.delete_from_csr( lindblad.data, row_indices=self.pos_to_del_gs_e1_dec, col_indices=self.pos_to_del_gs_e1_dec).toarray()      
-            L = coeff * sp.Matrix(l_reduced)
+            l_reduced = q_ops_utilities.delete_from_csr( lindblad.data, row_indices=self.pos_to_del_gs_e1_dec, col_indices=self.pos_to_del_gs_e1_dec).toarray()      
+            L = coeff * sympy.Matrix(l_reduced)
             self.L_sum +=  L.H * L 
         
 
-        self.nj_hamiltonian =  self.e1_hamiltonian - sp.I /2 * self.L_sum
+        self.nj_hamiltonian =  self.e1_hamiltonian - sympy.I /2 * self.L_sum
 
     
 
@@ -307,16 +318,16 @@ class EffectiveOperatorFormalism():
         Finds zero (row and columns) that make the array non singular. 
         Inversion of the non-singular sub-array.
         '''
-        self.nj_hamiltonian_inv = sp.zeros(self.nj_hamiltonian.rows,self.nj_hamiltonian.cols)
+        self.nj_hamiltonian_inv = sympy.zeros(self.nj_hamiltonian.rows,self.nj_hamiltonian.cols)
         non_zero_pos = []
         for i in range(self.gs_e1_dec_dim):
             # check if row is zero
             row = self.nj_hamiltonian[i,:]
-            row_is_zero =  row == sp.zeros(row.shape[0],row.shape[1])   
+            row_is_zero =  row == sympy.zeros(row.shape[0],row.shape[1])   
 
             # check if column is zero
             col = self.nj_hamiltonian[:,i]
-            col_is_zero =  col == sp.zeros(col.shape[0],col.shape[1])  
+            col_is_zero =  col == sympy.zeros(col.shape[0],col.shape[1])  
             
             if (not row_is_zero) and (not col_is_zero):
                 non_zero_pos.append(i)
@@ -324,9 +335,9 @@ class EffectiveOperatorFormalism():
 
         non_singular_sub_array = self.nj_hamiltonian[non_zero_pos,non_zero_pos]
         # invert
-        inverted_sub_array = non_singular_sub_array.LUsolve(sp.eye(non_singular_sub_array.cols))    
+        inverted_sub_array = non_singular_sub_array.LUsolve(sympy.eye(non_singular_sub_array.cols))    
         # simplify using together()
-        inverted_sub_array = system_functions.together_for_sympy_matrices(inverted_sub_array, processes= self.cores)
+        inverted_sub_array = q_ops_utilities.together_for_sympy_matrices(inverted_sub_array, processes= self.cores)
 
         for i,pos_i in enumerate(non_zero_pos):
             for j,pos_j in enumerate(non_zero_pos):
@@ -341,7 +352,7 @@ class EffectiveOperatorFormalism():
         '''
         self.eff_hamiltonian = self.gs_hamiltonian.copy()
         self.eff_hamiltonian += -1/2*self.V_minus * ( self.nj_hamiltonian_inv +self.nj_hamiltonian_inv.H ) * self.V_plus
-        self.eff_hamiltonian = system_functions.posify_array(self.eff_hamiltonian)
+        #self.eff_hamiltonian = q_ops_utilities.posify_array(self.eff_hamiltonian)
 
         #effective operator on gs
         self.eff_hamiltonian_gs = self.eff_hamiltonian.copy()
@@ -350,12 +361,12 @@ class EffectiveOperatorFormalism():
         self.lindblad_list = []
         self.eff_lindblad_list = []
         for (coeff , lindblad) in zip(self.L_coeffs ,self.Lindblad_list):
-            l_reduced = system_functions.delete_from_csr( lindblad.data, row_indices=self.pos_to_del_gs_e1_dec, col_indices=self.pos_to_del_gs_e1_dec).toarray()
+            l_reduced = q_ops_utilities.delete_from_csr( lindblad.data, row_indices=self.pos_to_del_gs_e1_dec, col_indices=self.pos_to_del_gs_e1_dec).toarray()
 
-            self.lindblad_list.append(coeff * sp.Matrix( l_reduced  ))  
+            self.lindblad_list.append(coeff * sympy.Matrix( l_reduced  ))  
             
-            L_eff = coeff * sp.Matrix( l_reduced  ) * self.nj_hamiltonian_inv * self.V_plus
-            L_eff = system_functions.posify_array(L_eff)
+            L_eff = coeff * sympy.Matrix( l_reduced  ) * self.nj_hamiltonian_inv * self.V_plus
+            #L_eff = q_ops_utilities.posify_array(L_eff)
             self.eff_lindblad_list.append( L_eff )
 
     
