@@ -102,14 +102,16 @@ class QOpsSystem():
             ket_idx_in_component = rabi.energy_level_ket.index_in_component
             bra_idx_in_component = rabi.energy_level_bra.index_in_component
             component_dimension = rabi.associated_component.dimension
-        
+
             ket = qutip.basis(component_dimension, ket_idx_in_component)
             bra = qutip.basis(component_dimension, bra_idx_in_component).dag()
             ketbra = ket * bra
             
             interaction_Qobj = q_ops_utilities.embed_ketbras_in_system(ketbra, index_in_system, self.dimensions)
             
-            self.hamiltonian['rabis'][rabi.name] = {'Qobj' : interaction_Qobj , 'coefficient' : rabi.coefficient}
+            self.hamiltonian['rabis'][rabi.name] = {'Qobj' : interaction_Qobj , 
+                                                    'coefficient' : rabi.coefficient,
+                                                    'interaction_object' : rabi}
 
         # Couplings
         for coupling in self.couplings.values():
@@ -183,7 +185,7 @@ class QOpsSystem():
         Make use of the effective operator formalism to obtain effective operators 
         when all rabis are weak.
         '''
-        from ..adiabatic_approximation import EffectiveOperatorFormalism
+        from ..adiabatic_elimination import EffectiveOperatorFormalism
         
         # If not compiled, compile the system
         if not self.compiled:

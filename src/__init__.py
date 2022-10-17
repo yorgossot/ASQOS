@@ -1,2 +1,2 @@
 from .abstraction import *
-from .adiabatic_approximation import *
+from .adiabatic_elimination import *

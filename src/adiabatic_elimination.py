@@ -20,8 +20,7 @@ class EffectiveOperatorFormalism():
     def __init__(self, q_ops_system : QOpsSystem ,  cores = None):
         self.cores = cores
         self.q_ops_system = q_ops_system
-        # Creation of the system comprised of the elements that make up the system.
-        # Elements being o, x, O , -
+
         self.components = self.q_ops_system.components
         self.dimensions = self.q_ops_system.dimensions
         self.dimension =  numpy.prod(self.q_ops_system.dimensions)
@@ -32,22 +31,18 @@ class EffectiveOperatorFormalism():
         print('Constructing ground and first-excited statespace ...')
         self.construct_gs_e1_dec_subspace()
         self.obtain_energy_info()    
-        print('Constructing gs_hamiltonian ...')  
+        print('Constructing hamiltonian interactions ...')  
         self.construct_gs_hamiltonian()
-        print('Constructing e1_hamiltonian ...') 
         self.construct_e1_hamiltonian()
-        print('Constructing interactions V_plus and V_minus ...')
         self.construct_V()
-        print('Constructing NJ_hamiltonian ...')        
-        self.construct_nj_hamiltonian()
-        print('Inverting NJ_hamiltonian ...') 
-        self.construct_nj_hamiltonian_inverse()
-        print('Constructing eff_hamiltonian and effective lindblad operators ...')   
+        print('Constructing no-jump hamiltonian and inverting it ...')        
+        self.construct_no_jump_hamiltonian()
+        self.invert_no_jump_hamiltonian()
+        print('Constructing effective operators ...')   
         self.construct_eff_hamiltonian_lindblads()
 
-        
         t_end = time.time()
-        print(f'\nQOpsSystem {self.q_ops_system.name} effective operators in {round(t_end-t_start , 1)} seconds.')
+        print(f'\nObtained {self.q_ops_system.name} effective operators in {round(t_end-t_start , 1)} seconds.')
 
 
 
@@ -107,80 +102,80 @@ class EffectiveOperatorFormalism():
             Similarly for e1 and dec...
         '''
         
-        self.pos_to_del_gs_e1_dec = []
+        self._indices_to_del_gs_e1_dec = []
         for (i , excitation ) in enumerate(self.excitations) :
             letter_count = Counter(excitation)
             d_count = letter_count['D'] # number of decayed states
             e_count = letter_count['E'] # number of excited states
 
             if d_count + e_count > 1:
-                self.pos_to_del_gs_e1_dec.append(i)
+                self._indices_to_del_gs_e1_dec.append(i)
         
         #self.pos_gs_e1_dec = [i for i in [*range(self.dim)] if i not in self.pos_to_del_gs_e1_dec]   #DELETED DUE TO IT BEING TOO SLOW
-        self.gs_e1_dec_dim = self.dimension- len(self.pos_to_del_gs_e1_dec)
-        self.gs_e1_dec_excitations = numpy.delete(self.excitations , self.pos_to_del_gs_e1_dec)
-        self.gs_e1_dec_states = numpy.delete(self.states , self.pos_to_del_gs_e1_dec)
+        self.dimension_gs_e1_dec = self.dimension- len(self._indices_to_del_gs_e1_dec)
+        self.excitations_gs_e1_dec = numpy.delete(self.excitations , self._indices_to_del_gs_e1_dec)
+        self.states_gs_e1_dec = numpy.delete(self.states , self._indices_to_del_gs_e1_dec)
 
 
         # gs_hamiltonian states and positions in gs_e1_dec subspace
 
-        self.pos_to_del_gs = []
-        for (i , excitation ) in enumerate(self.gs_e1_dec_excitations) :            
+        self._indices_to_del_gs = []
+        for (i , excitation ) in enumerate(self.excitations_gs_e1_dec) :            
             letter_count = Counter(excitation)
             d_count = letter_count['D'] # number of decayed states
             e_count = letter_count['E'] # number of excited states
             
             if  e_count + d_count > 0 :
-                self.pos_to_del_gs.append(i)
+                self._indices_to_del_gs.append(i)
         
-        self.pos_to_del_gs = list(dict.fromkeys(self.pos_to_del_gs)) #remove duplicates
+        self._indices_to_del_gs = list(dict.fromkeys(self._indices_to_del_gs)) #remove duplicates
         
-        self.gs_dim = self.gs_e1_dec_dim - len(self.pos_to_del_gs)
+        self.dimension_gs = self.dimension_gs_e1_dec - len(self._indices_to_del_gs)
 
-        self.pos_gs = [i for i in [*range(self.gs_e1_dec_dim )] if i not in self.pos_to_del_gs]  #all positions that contain gs in gs_e1_dec
+        self.indices_gs = [i for i in [*range(self.dimension_gs_e1_dec )] if i not in self._indices_to_del_gs]  #all positions that contain gs in gs_e1_dec
 
                 
-        self.gs_states = numpy.delete(self.gs_e1_dec_states, self.pos_to_del_gs )
-        self.gs_excitations = numpy.delete(self.gs_e1_dec_excitations, self.pos_to_del_gs )
+        self.states_gs = numpy.delete(self.states_gs_e1_dec, self._indices_to_del_gs )
+        self.excitations_gs = numpy.delete(self.excitations_gs_e1_dec, self._indices_to_del_gs )
 
 
         # e1_hamiltonian states and positions in gs_e1_dec subspace
         
-        self.pos_to_del_e1 = []
-        for (i , excitation ) in enumerate(self.gs_e1_dec_excitations) : 
+        self._indices_to_del_e1 = []
+        for (i , excitation ) in enumerate(self.excitations_gs_e1_dec) : 
             letter_count = Counter(excitation)
             e_count = letter_count['E'] # number of excited states
 
             if e_count != 1 :
-                self.pos_to_del_e1.append(i)
+                self._indices_to_del_e1.append(i)
 
-        self.pos_to_del_e1 = list(dict.fromkeys(self.pos_to_del_e1)) #remove duplicates
+        self._indices_to_del_e1 = list(dict.fromkeys(self._indices_to_del_e1)) #remove duplicates
         
-        self.e1_dim = self.gs_e1_dec_dim - len(self.pos_to_del_e1)  
+        self.dimension_e1 = self.dimension_gs_e1_dec - len(self._indices_to_del_e1)  
 
-        self.pos_e1 = [i for i in [*range(self.gs_e1_dec_dim )] if i not in self.pos_to_del_e1]  #all positions that contain e1 in gs_e1_dec
+        self.indices_e1 = [i for i in [*range(self.dimension_gs_e1_dec )] if i not in self._indices_to_del_e1]  #all positions that contain e1 in gs_e1_dec
 
-        self.e1_states = numpy.delete(self.gs_e1_dec_states, self.pos_to_del_e1 )
-        self.e1_excitations = numpy.delete(self.gs_e1_dec_excitations, self.pos_to_del_e1 )
+        self.states_e1 = numpy.delete(self.states_gs_e1_dec, self._indices_to_del_e1 )
+        self.excitations_e1 = numpy.delete(self.excitations_gs_e1_dec, self._indices_to_del_e1 )
       
 
         #dec states in the subspace
-        self.pos_to_del_dec = []
-        for (i , excitation ) in enumerate(self.gs_e1_dec_excitations) : 
+        self._indices_to_del_dec = []
+        for (i , excitation ) in enumerate(self.excitations_gs_e1_dec) : 
             letter_count = Counter(excitation)
             d_count = letter_count['D'] # number of decayed states
 
             if  d_count != 1:
-                self.pos_to_del_dec.append(i)
+                self._indices_to_del_dec.append(i)
         
-        self.pos_to_del_dec = list(dict.fromkeys(self.pos_to_del_dec)) #remove duplicates
+        self._indices_to_del_dec = list(dict.fromkeys(self._indices_to_del_dec)) #remove duplicates
         
-        self.dec_dim = self.gs_e1_dec_dim - len(self.pos_to_del_dec)  
+        self.dimension_dec = self.dimension_gs_e1_dec - len(self._indices_to_del_dec)  
 
-        self.pos_dec = [i for i in [*range(self.gs_e1_dec_dim )] if i not in self.pos_to_del_dec]  #all positions that contain dec in gs_e1_dec
+        self.indices_dec = [i for i in [*range(self.dimension_gs_e1_dec )] if i not in self._indices_to_del_dec]  #all positions that contain dec in gs_e1_dec
 
-        self.dec_states = numpy.delete(self.gs_e1_dec_states, self.pos_to_del_dec )
-        self.dec_excitations = numpy.delete(self.gs_e1_dec_excitations, self.pos_to_del_dec )
+        self.states_dec = numpy.delete(self.states_gs_e1_dec, self._indices_to_del_dec )
+        self.excitations_dec = numpy.delete(self.excitations_gs_e1_dec, self._indices_to_del_dec )
 
 
 
@@ -192,7 +187,7 @@ class EffectiveOperatorFormalism():
         '''
         self.H_list = []
         self.H_coeffs = []
-        self.gs_e1_dec_int =[]
+        self.gs_e1_int =[]
         
         self.Lindblad_list = []
         self.L_coeffs = []
@@ -200,23 +195,27 @@ class EffectiveOperatorFormalism():
         for rabi in self.q_ops_system.hamiltonian['rabis'].values():
             qobj = rabi['Qobj']
             coefficient = rabi['coefficient']
+            
+            rabi_object = rabi['interaction_object']
+
             self.H_list.append(qobj)
             self.H_coeffs.append(coefficient)
-            self.gs_e1_dec_int.append(True)
+
+            self.gs_e1_int.append(True)
         
         for energy_level in self.q_ops_system.hamiltonian['energy_levels'].values():
             qobj = energy_level['Qobj']
             coefficient = energy_level['coefficient']
             self.H_list.append(qobj)
             self.H_coeffs.append(coefficient)
-            self.gs_e1_dec_int.append(False)
+            self.gs_e1_int.append(False)
         
         for coupling in self.q_ops_system.hamiltonian['couplings'].values():
             qobj = coupling['Qobj']
             coefficient = coupling['coefficient']
             self.H_list.append(qobj)
             self.H_coeffs.append(coefficient)
-            self.gs_e1_dec_int.append(False)
+            self.gs_e1_int.append(False)
 
         for decay in self.q_ops_system.lindblads.values():
             qobj = decay['Qobj']
@@ -234,21 +233,21 @@ class EffectiveOperatorFormalism():
 
         Note that the gs_hamiltonian will be a sage matrix and not a qt object.
         '''
-        self.gs_hamiltonian = numpy.zeros((self.gs_e1_dec_dim,self.gs_e1_dec_dim) , dtype = 'complex128')
+        self.hamiltonian_gs = numpy.zeros((self.dimension_gs_e1_dec,self.dimension_gs_e1_dec) , dtype = 'complex128')
 
-        self.gs_hamiltonian = sympy.Matrix(self.gs_hamiltonian )
+        self.hamiltonian_gs = sympy.SparseMatrix(self.hamiltonian_gs )
 
         for (coeff , h) in zip(self.H_coeffs,self.H_list):
-            h_reduced = q_ops_utilities.delete_from_csr( h.data, row_indices=self.pos_to_del_gs_e1_dec, col_indices=self.pos_to_del_gs_e1_dec).toarray() 
-            h_reduced[self.pos_e1, :]  = 0
-            h_reduced[: , self.pos_e1] = 0
-            h_reduced[self.pos_dec, :]  = 0
-            h_reduced[: , self.pos_dec] = 0
-            self.gs_hamiltonian = self.gs_hamiltonian + coeff * sympy.Matrix(h_reduced)
+            h_reduced = q_ops_utilities.delete_from_csr( h.data, row_indices=self._indices_to_del_gs_e1_dec, col_indices=self._indices_to_del_gs_e1_dec).toarray() 
+            h_reduced[self.indices_e1, :]  = 0
+            h_reduced[: , self.indices_e1] = 0
+            h_reduced[self.indices_dec, :]  = 0
+            h_reduced[: , self.indices_dec] = 0
+            self.hamiltonian_gs = self.hamiltonian_gs + coeff * sympy.SparseMatrix(h_reduced)
         
         # Because hamiltonians are created without the complex conjugate, we have to add the complex conjugate (if it is not diagonal).
         # The routine below takes care of it.
-        self.gs_hamiltonian = q_ops_utilities.make_into_hermitian(self.gs_hamiltonian)
+        self.hamiltonian_gs = q_ops_utilities.make_into_hermitian(self.hamiltonian_gs)
 
 
 
@@ -260,18 +259,18 @@ class EffectiveOperatorFormalism():
         Note that the e1_hamiltonian will be a sage matrix and not a qt object.
         '''
         
-        self.e1_hamiltonian = sympy.Matrix ( numpy.zeros((self.gs_e1_dec_dim,self.gs_e1_dec_dim), dtype = 'complex128') )
+        self.hamiltonian_e1 = sympy.SparseMatrix ( numpy.zeros((self.dimension_gs_e1_dec,self.dimension_gs_e1_dec), dtype = 'complex128') )
         for (coeff , h) in zip(self.H_coeffs,self.H_list):
-            h_reduced = q_ops_utilities.delete_from_csr( h.data, row_indices=self.pos_to_del_gs_e1_dec, col_indices=self.pos_to_del_gs_e1_dec).toarray()
-            h_reduced[self.pos_gs, :]  = 0
-            h_reduced[: , self.pos_gs] = 0
-            h_reduced[self.pos_dec, :]  = 0
-            h_reduced[: , self.pos_dec] = 0       
-            self.e1_hamiltonian += coeff * sympy.Matrix( h_reduced  )     
+            h_reduced = q_ops_utilities.delete_from_csr( h.data, row_indices=self._indices_to_del_gs_e1_dec, col_indices=self._indices_to_del_gs_e1_dec).toarray()
+            h_reduced[self.indices_gs, :]  = 0
+            h_reduced[: , self.indices_gs] = 0
+            h_reduced[self.indices_dec, :]  = 0
+            h_reduced[: , self.indices_dec] = 0       
+            self.hamiltonian_e1 += coeff * sympy.SparseMatrix( h_reduced  )     
 
         # Because hamiltonians are created without the complex conjugate, we have to add the complex conjugate (if it is not diagonal).
         # The routine below takes care of it.
-        self.e1_hamiltonian = q_ops_utilities.make_into_hermitian(self.e1_hamiltonian)
+        self.hamiltonian_e1 = q_ops_utilities.make_into_hermitian(self.hamiltonian_e1)
 
 
 
@@ -282,65 +281,66 @@ class EffectiveOperatorFormalism():
         Note that the V_plus and V_minus will be a sage matrix and not qt objects.
         '''
 
-        self.V_plus = sympy.zeros(self.gs_e1_dec_dim,self.gs_e1_dec_dim  ) 
+        self.V_plus = sympy.zeros(self.dimension_gs_e1_dec,self.dimension_gs_e1_dec  ) 
 
-        for (coeff , h , gs_e1_interaction) in zip(self.H_coeffs,self.H_list , self.gs_e1_dec_int):
+        for (coeff , h , gs_e1_interaction) in zip(self.H_coeffs,self.H_list , self.gs_e1_int):
             if gs_e1_interaction:
-                h_reduced = q_ops_utilities.delete_from_csr( h.data, row_indices=self.pos_to_del_gs_e1_dec, col_indices=self.pos_to_del_gs_e1_dec).toarray()
-                self.V_plus += coeff * sympy.Matrix(h_reduced)
+                h_reduced = q_ops_utilities.delete_from_csr( h.data, row_indices=self._indices_to_del_gs_e1_dec, col_indices=self._indices_to_del_gs_e1_dec).toarray()
+                self.V_plus += coeff * sympy.SparseMatrix(h_reduced)
 
         
         self.V_minus = self.V_plus.H
     
     
 
-    def construct_nj_hamiltonian(self):
+    def construct_no_jump_hamiltonian(self):
         '''
         Constructs the no-jump Hamiltonian from the excited hamiltonian and the lindblad operators.
         '''
 
-        self.L_sum =  sympy.zeros( self.gs_e1_dec_dim,self.gs_e1_dec_dim  ) 
+        L_sum =  sympy.zeros( self.dimension_gs_e1_dec,self.dimension_gs_e1_dec  ) 
 
         for (coeff , lindblad) in zip(self.L_coeffs ,self.Lindblad_list):
-            l_reduced = q_ops_utilities.delete_from_csr( lindblad.data, row_indices=self.pos_to_del_gs_e1_dec, col_indices=self.pos_to_del_gs_e1_dec).toarray()      
-            L = coeff * sympy.Matrix(l_reduced)
-            self.L_sum +=  L.H * L 
+            l_reduced = q_ops_utilities.delete_from_csr( lindblad.data, row_indices=self._indices_to_del_gs_e1_dec, col_indices=self._indices_to_del_gs_e1_dec).toarray()      
+            L = coeff * sympy.SparseMatrix(l_reduced)
+            L_sum +=  L.H * L 
         
 
-        self.nj_hamiltonian =  self.e1_hamiltonian - sympy.I /2 * self.L_sum
+        self.hamiltonian_nj =  self.hamiltonian_e1 - sympy.I /2 * L_sum
 
     
 
-    def construct_nj_hamiltonian_inverse(self):
+    def invert_no_jump_hamiltonian(self):
         '''
         Constructs nj_hamiltonian_inverse.
         
         Finds zero (row and columns) that make the array non singular. 
         Inversion of the non-singular sub-array.
         '''
-        self.nj_hamiltonian_inv = sympy.zeros(self.nj_hamiltonian.rows,self.nj_hamiltonian.cols)
-        non_zero_pos = []
-        for i in range(self.gs_e1_dec_dim):
+        self.nj_hamiltonian_inv = sympy.zeros(self.hamiltonian_nj.rows,self.hamiltonian_nj.cols)
+        
+        non_zero_indices_nj_ham = []
+        for i in range(self.dimension_gs_e1_dec):
             # check if row is zero
-            row = self.nj_hamiltonian[i,:]
+            row = self.hamiltonian_nj[i,:]
             row_is_zero =  row == sympy.zeros(row.shape[0],row.shape[1])   
 
             # check if column is zero
-            col = self.nj_hamiltonian[:,i]
+            col = self.hamiltonian_nj[:,i]
             col_is_zero =  col == sympy.zeros(col.shape[0],col.shape[1])  
             
             if (not row_is_zero) and (not col_is_zero):
-                non_zero_pos.append(i)
+                non_zero_indices_nj_ham.append(i)
 
 
-        non_singular_sub_array = self.nj_hamiltonian[non_zero_pos,non_zero_pos]
+        non_singular_sub_array = self.hamiltonian_nj[non_zero_indices_nj_ham,non_zero_indices_nj_ham]
         # invert
         inverted_sub_array = non_singular_sub_array.LUsolve(sympy.eye(non_singular_sub_array.cols))    
         # simplify using together()
         inverted_sub_array = q_ops_utilities.together_for_sympy_matrices(inverted_sub_array, processes= self.cores)
 
-        for i,pos_i in enumerate(non_zero_pos):
-            for j,pos_j in enumerate(non_zero_pos):
+        for i,pos_i in enumerate(non_zero_indices_nj_ham):
+            for j,pos_j in enumerate(non_zero_indices_nj_ham):
                 self.nj_hamiltonian_inv[pos_i,pos_j] = inverted_sub_array[i,j]
 
 
@@ -350,23 +350,23 @@ class EffectiveOperatorFormalism():
         '''
         Consrtucts effective hamiltonian and eff_lindblad operators.
         '''
-        self.eff_hamiltonian = self.gs_hamiltonian.copy()
-        self.eff_hamiltonian += -1/2*self.V_minus * ( self.nj_hamiltonian_inv +self.nj_hamiltonian_inv.H ) * self.V_plus
-        #self.eff_hamiltonian = q_ops_utilities.posify_array(self.eff_hamiltonian)
+        self.effective_hamiltonian = self.hamiltonian_gs.copy()
+        
+        self.effective_hamiltonian += -1/2*self.V_minus * ( self.nj_hamiltonian_inv +self.nj_hamiltonian_inv.H ) * self.V_plus
 
         #effective operator on gs
-        self.eff_hamiltonian_gs = self.eff_hamiltonian.copy()
-        self.eff_hamiltonian_gs = self.eff_hamiltonian_gs[self.pos_gs,self.pos_gs]
+        self.effective_hamiltonian_gs = self.effective_hamiltonian.copy()
+        self.effective_hamiltonian_gs = self.effective_hamiltonian_gs[self.indices_gs,self.indices_gs]
         
         self.lindblad_list = []
-        self.eff_lindblad_list = []
+        self.effective_lindblad_list = []
         for (coeff , lindblad) in zip(self.L_coeffs ,self.Lindblad_list):
-            l_reduced = q_ops_utilities.delete_from_csr( lindblad.data, row_indices=self.pos_to_del_gs_e1_dec, col_indices=self.pos_to_del_gs_e1_dec).toarray()
+            l_reduced = q_ops_utilities.delete_from_csr( lindblad.data, row_indices=self._indices_to_del_gs_e1_dec, col_indices=self._indices_to_del_gs_e1_dec).toarray()
 
-            self.lindblad_list.append(coeff * sympy.Matrix( l_reduced  ))  
+            self.lindblad_list.append(coeff * sympy.SparseMatrix( l_reduced  ))  
             
-            L_eff = coeff * sympy.Matrix( l_reduced  ) * self.nj_hamiltonian_inv * self.V_plus
+            L_eff = coeff * sympy.SparseMatrix( l_reduced  ) * self.nj_hamiltonian_inv * self.V_plus
             #L_eff = q_ops_utilities.posify_array(L_eff)
-            self.eff_lindblad_list.append( L_eff )
+            self.effective_lindblad_list.append( L_eff )
 
     
