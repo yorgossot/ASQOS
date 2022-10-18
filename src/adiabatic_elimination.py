@@ -14,11 +14,11 @@ from . import q_ops_utilities
 
 class EffectiveOperatorFormalism():
     '''
-    
+    If symplification_cores == -1 then no simplification is performed
     '''
  
-    def __init__(self, q_ops_system : QOpsSystem ,  cores = None):
-        self.cores = cores
+    def __init__(self, q_ops_system : QOpsSystem ,  symplification_cores = None):
+        self.symplification_cores = symplification_cores
         self.q_ops_system = q_ops_system
 
         self.components = self.q_ops_system.components
@@ -187,7 +187,7 @@ class EffectiveOperatorFormalism():
         '''
         self.H_list = []
         self.H_coeffs = []
-        self.gs_e1_int =[]
+        self.is_V_plus =[]
         
         self.Lindblad_list = []
         self.L_coeffs = []
@@ -198,24 +198,39 @@ class EffectiveOperatorFormalism():
             
             rabi_object = rabi['interaction_object']
 
-            self.H_list.append(qobj)
-            self.H_coeffs.append(coefficient)
+            ket_excitation_status = rabi_object.energy_level_ket.excitation_status
+            bra_excitation_status = rabi_object.energy_level_bra.excitation_status
 
-            self.gs_e1_int.append(True)
+            if bra_excitation_status == 'R' and ket_excitation_status == 'E':
+                # It is rabi that excites GS->E1
+                self.H_list.append(qobj)
+                self.H_coeffs.append(coefficient)
+                self.is_V_plus.append(True)
+            elif bra_excitation_status == 'E' and ket_excitation_status == 'R':
+                # It is rabi that de-excites E1->GS
+                # Conjugate everything
+                self.H_list.append(qobj.dag())
+                self.H_coeffs.append( sympy.conjugate(coefficient) )
+                self.is_V_plus.append(True)
+            else:
+                # It is rabi that does not excite
+                self.H_list.append(qobj)
+                self.H_coeffs.append(coefficient)
+                self.is_V_plus.append(False)
         
         for energy_level in self.q_ops_system.hamiltonian['energy_levels'].values():
             qobj = energy_level['Qobj']
             coefficient = energy_level['coefficient']
             self.H_list.append(qobj)
             self.H_coeffs.append(coefficient)
-            self.gs_e1_int.append(False)
+            self.is_V_plus.append(False)
         
         for coupling in self.q_ops_system.hamiltonian['couplings'].values():
             qobj = coupling['Qobj']
             coefficient = coupling['coefficient']
             self.H_list.append(qobj)
             self.H_coeffs.append(coefficient)
-            self.gs_e1_int.append(False)
+            self.is_V_plus.append(False)
 
         for decay in self.q_ops_system.lindblads.values():
             qobj = decay['Qobj']
@@ -283,8 +298,8 @@ class EffectiveOperatorFormalism():
 
         self.V_plus = sympy.zeros(self.dimension_gs_e1_dec,self.dimension_gs_e1_dec  ) 
 
-        for (coeff , h , gs_e1_interaction) in zip(self.H_coeffs,self.H_list , self.gs_e1_int):
-            if gs_e1_interaction:
+        for (coeff , h , is_V_plus) in zip(self.H_coeffs,self.H_list , self.is_V_plus):
+            if is_V_plus:
                 h_reduced = q_ops_utilities.delete_from_csr( h.data, row_indices=self._indices_to_del_gs_e1_dec, col_indices=self._indices_to_del_gs_e1_dec).toarray()
                 self.V_plus += coeff * sympy.SparseMatrix(h_reduced)
 
@@ -337,7 +352,8 @@ class EffectiveOperatorFormalism():
         # invert
         inverted_sub_array = non_singular_sub_array.LUsolve(sympy.eye(non_singular_sub_array.cols))    
         # simplify using together()
-        inverted_sub_array = q_ops_utilities.together_for_sympy_matrices(inverted_sub_array, processes= self.cores)
+        if self.symplification_cores != -1:    
+            inverted_sub_array = q_ops_utilities.together_for_sympy_matrices(inverted_sub_array, processes= self.symplification_cores)
 
         for i,pos_i in enumerate(non_zero_indices_nj_ham):
             for j,pos_j in enumerate(non_zero_indices_nj_ham):

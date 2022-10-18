@@ -180,10 +180,10 @@ class QOpsSystem():
         self.compiled = True
     
     
-    def obtain_effective_operators(self):
+    def obtain_effective_operators(self, symplification_cores = None):
         '''
         Make use of the effective operator formalism to obtain effective operators 
-        when all rabis are weak.
+        when all exciting rabis are weak.
         '''
         from ..adiabatic_elimination import EffectiveOperatorFormalism
         
@@ -191,7 +191,7 @@ class QOpsSystem():
         if not self.compiled:
             self.compile()
         
-        self.effective_operator_formalism = EffectiveOperatorFormalism(self)
+        self.effective_operator_formalism = EffectiveOperatorFormalism(self , symplification_cores=symplification_cores)
         
 
 
